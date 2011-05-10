@@ -4585,9 +4585,11 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
             if (failedFetchTrackerName == null) {
               failedFetchTrackerName = "Lost task tracker";
             }
-            failedFetchMap.getJob().fetchFailureNotification(failedFetchMap, 
-                                                             mapTaskId, 
-                                                             failedFetchTrackerName);
+            failedFetchMap.getJob().fetchFailureNotification(failedFetchMap,
+                                                             mapTaskId,
+                                                             failedFetchTrackerName,
+                                                             taskId,
+                                                             trackerName);
           }
         }
       }
