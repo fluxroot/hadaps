@@ -61,7 +61,7 @@ class SpillRecord {
     final FileSystem rfs = FileSystem.getLocal(job).getRaw();
     final DataInputStream in = 
       new DataInputStream(SecureIOUtils.openForRead(
-         new File(indexFileName.toUri().getPath()), expectedIndexOwner));
+         new File(indexFileName.toUri().getPath()), expectedIndexOwner, null));
     try {
       final long length = rfs.getFileStatus(indexFileName).getLen();
       final int partitions = (int) length / MAP_OUTPUT_INDEX_RECORD_LENGTH;

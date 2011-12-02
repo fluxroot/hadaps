@@ -78,7 +78,7 @@ public class TestUmbilicalProtocolWithJobToken {
         TaskUmbilicalProtocol.versionID);
 
     JobTokenSecretManager sm = new JobTokenSecretManager();
-    final Server server = RPC.getServer(mockTT,
+    final Server server = RPC.getServer(TaskUmbilicalProtocol.class, mockTT,
         ADDRESS, 0, 5, true, conf, sm);
 
     server.start();

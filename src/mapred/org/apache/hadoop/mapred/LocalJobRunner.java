@@ -39,6 +39,7 @@ import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitMetaInfo;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -66,6 +67,13 @@ class LocalJobRunner implements JobSubmissionProtocol {
   
   public long getProtocolVersion(String protocol, long clientVersion) {
     return JobSubmissionProtocol.versionID;
+  }
+  
+  @Override // VersionedProtocol
+  public ProtocolSignature getProtocolSignature(String protocol,
+      long clientVersion, int clientMethodsHash) throws IOException {
+    return ProtocolSignature.getProtocolSignature(
+        this, protocol, clientVersion, clientMethodsHash);
   }
   
   private class Job extends Thread
@@ -101,6 +109,13 @@ class LocalJobRunner implements JobSubmissionProtocol {
 
     public long getProtocolVersion(String protocol, long clientVersion) {
       return TaskUmbilicalProtocol.versionID;
+    }
+    
+    @Override // VersionedProtocol
+    public ProtocolSignature getProtocolSignature(String protocol,
+        long clientVersion, int clientMethodsHash) throws IOException {
+      return ProtocolSignature.getProtocolSignature(
+          this, protocol, clientVersion, clientMethodsHash);
     }
     
     public Job(JobID jobid, String jobSubmitDir) throws IOException {

@@ -71,6 +71,7 @@ import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIden
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenSecretManager;
 import org.apache.hadoop.http.HttpServer;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.RPC.VersionMismatch;
@@ -122,10 +123,7 @@ import org.mortbay.util.ajax.JSON;
  * tracking MR jobs in a network environment.
  *
  *******************************************************/
-public class JobTracker implements MRConstants, InterTrackerProtocol,
-    JobSubmissionProtocol, TaskTrackerManager, RefreshUserMappingsProtocol,
-    RefreshAuthorizationPolicyProtocol, AdminOperationsProtocol,
-    JobTrackerMXBean, GetUserMappingsProtocol {
+public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
 
   static{
     Configuration.addDefaultResource("mapred-default.xml");
@@ -342,6 +340,14 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
       throw new IOException("Unknown protocol to job tracker: " + protocol);
     }
   }
+  
+  @Override // VersionedProtocol
+  public ProtocolSignature getProtocolSignature(String protocol,
+    long clientVersion, int clientMethodsHash) throws IOException {
+    return ProtocolSignature.getProtocolSignature(
+        this, protocol, clientVersion, clientMethodsHash);
+  }
+
   
   public DelegationTokenSecretManager getDelegationTokenSecretManager() {
     return secretManager;
@@ -2141,7 +2147,8 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     
     int handlerCount = conf.getInt("mapred.job.tracker.handler.count", 10);
     this.interTrackerServer = 
-      RPC.getServer(this, addr.getHostName(), addr.getPort(), handlerCount, 
+      RPC.getServer(JTProtocols.class, 
+          this, addr.getHostName(), addr.getPort(), handlerCount, 
           false, conf, secretManager);
 
     // Set service-level authorization security policy
@@ -2160,7 +2167,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     }
 
     String infoAddr = 
-      NetUtils.getServerAddress(conf, "mapred.job.tracker.info.bindAddress",
+      NetUtils2.getServerAddress(conf, "mapred.job.tracker.info.bindAddress",
                                 "mapred.job.tracker.info.port",
                                 "mapred.job.tracker.http.address");
     InetSocketAddress infoSocAddr = NetUtils.createSocketAddr(infoAddr);
@@ -5188,4 +5195,5 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     return map;
   }
   // End MXbean implementaiton
+
 }

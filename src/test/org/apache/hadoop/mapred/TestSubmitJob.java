@@ -265,7 +265,7 @@ public class TestSubmitJob extends TestCase {
         String path = new URI(jt.getSystemDir()).getPath();
         LOG.info("Try listing the mapred-system-dir as the user ("
             + user2.getUserName() + ")");
-        client.getListing(path, HdfsFileStatus.EMPTY_NAME);
+        client.getListing(path, HdfsFileStatus.EMPTY_NAME, false);
         fail("JobTracker system dir is accessible to others");
       } catch (IOException ioe) {
         assertTrue(ioe.toString(),
@@ -278,7 +278,8 @@ public class TestSubmitJob extends TestCase {
       try {
         LOG.info("Try accessing the job folder for job " + id + " as the user ("
             + user2.getUserName() + ")");
-        client.getListing(jobSubmitDirpath.toUri().getPath(), HdfsFileStatus.EMPTY_NAME);
+        client.getListing(jobSubmitDirpath.toUri().getPath(),
+            HdfsFileStatus.EMPTY_NAME, false);
         fail("User's staging folder is accessible to others");
       } catch (IOException ioe) {
         assertTrue(ioe.toString(),

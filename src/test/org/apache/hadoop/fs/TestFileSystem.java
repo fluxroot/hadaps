@@ -606,7 +606,7 @@ public class TestFileSystem extends TestCase {
     // Different URIs should result in different FS instances
     assertNotSame(fsWithAuto, fsWithoutAuto);
 
-    FileSystem.CACHE.closeAll(null, true);
+    FileSystem.CACHE.closeAll(true);
     assertEquals(1, closed.size());
     assertTrue(closed.contains(fsWithAuto));
 

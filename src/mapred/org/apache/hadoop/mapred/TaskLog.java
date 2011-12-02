@@ -433,7 +433,7 @@ public class TaskLog {
       bytesRemaining = end - start;
       String owner = obtainLogDirOwner(taskid);
       file = SecureIOUtils.openForRead(new File(fileDetail.location, kind.toString()), 
-          owner);
+          owner, null);
       // skip upto start
       long pos = 0;
       while (pos < start) {

@@ -885,7 +885,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
           String queue = jobCopy.getQueueName();
           AccessControlList acl = jobSubmitClient.getQueueAdmins(queue);
           jobCopy.set(QueueManager.toFullPropertyName(queue,
-              QueueACL.ADMINISTER_JOBS.getAclName()), acl.getACLString());
+              QueueACL.ADMINISTER_JOBS.getAclName()), acl.getAclString());
 
           // Write job file to JobTracker's fs        
           FSDataOutputStream out = 
@@ -927,7 +927,8 @@ public class JobClient extends Configured implements MRConstants, Tool  {
       for(Token<?> token: credentials.getAllTokens()) {
         if (token.getKind().toString().equals("HDFS_DELEGATION_TOKEN")) {
           LOG.debug("Submitting with " +
-              DFSClient.stringifyToken((Token<org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier>) token));
+              org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier.stringifyToken(
+                  (Token<org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier>) token));
         }
       }
     }

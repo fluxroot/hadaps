@@ -42,6 +42,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -149,8 +150,7 @@ public class TestTokenCache {
     
     createTokenFileJson();
     verifySecretKeysInJSONFile();
-    dfsCluster.getNameNode().getNamesystem()
-				.getDelegationTokenSecretManager().startThreads();
+    NameNodeAdapter.getDtSecretManager(dfsCluster.getNamesystem()).startThreads();
     FileSystem fs = dfsCluster.getFileSystem();
     
     p1 = new Path("file1");

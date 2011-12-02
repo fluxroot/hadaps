@@ -35,7 +35,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobTracker;
 import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
 import org.apache.hadoop.security.Credentials;
-import org.apache.hadoop.security.KerberosName;
+import org.apache.hadoop.security.HadoopKerberosName;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -84,7 +84,7 @@ public class TokenCache {
                                                Configuration conf
                                                ) throws IOException {
     // get jobtracker principal id (for the renewer)
-    KerberosName jtKrbName = new KerberosName(conf.get(JobTracker.JT_USER_NAME, ""));
+    HadoopKerberosName jtKrbName = new HadoopKerberosName(conf.get(JobTracker.JT_USER_NAME, ""));
     String delegTokenRenewer = jtKrbName.getShortName();
     boolean readFile = true;
     for(Path p: ps) {

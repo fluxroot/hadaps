@@ -74,6 +74,7 @@ import org.apache.hadoop.http.HttpServer;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.io.SecureIOUtils;
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.ipc.Server;
@@ -757,6 +758,13 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     }
   }
 
+  @Override // VersionedProtocol
+  public ProtocolSignature getProtocolSignature(String protocol,
+    long clientVersion, int clientMethodsHash) throws IOException {
+    return ProtocolSignature.getProtocolSignature(
+        this, protocol, clientVersion, clientMethodsHash);
+  }
+
   /**
    * Delete all of the user directories.
    * @param conf the TT configuration
@@ -895,7 +903,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     
     // bind address
     String address = 
-      NetUtils.getServerAddress(fConf,
+      NetUtils2.getServerAddress(fConf,
                                 "mapred.task.tracker.report.bindAddress", 
                                 "mapred.task.tracker.report.port", 
                                 "mapred.task.tracker.report.address");
@@ -910,7 +918,8 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
                        maxMapSlots : maxReduceSlots;
     //set the num handlers to max*2 since canCommit may wait for the duration
     //of a heartbeat RPC
-    this.taskReportServer = RPC.getServer(this, bindAddress,
+    this.taskReportServer = RPC.getServer(TaskUmbilicalProtocol.class,
+        this, bindAddress,
         tmpPort, 2 * max, false, this.fConf, this.jobTokenSecretManager);
 
     // Set service-level authorization security policy
@@ -1575,7 +1584,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     aclsManager = new ACLsManager(conf, new JobACLsManager(conf), null);
     this.jobTrackAddr = JobTracker.getAddress(conf);
     String infoAddr = 
-      NetUtils.getServerAddress(conf,
+      NetUtils2.getServerAddress(conf,
                                 "tasktracker.http.bindAddress", 
                                 "tasktracker.http.port",
                                 "mapred.task.tracker.http.address");
@@ -4019,7 +4028,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
          */
         //open the map-output file
         mapOutputIn = SecureIOUtils.openForRead(
-            new File(mapOutputFileName.toUri().getPath()), runAsUserName);
+            new File(mapOutputFileName.toUri().getPath()), runAsUserName, null);
 
         // readahead if possible
         if (tracker.manageOsCacheInShuffle && info.partLength > 0) {
