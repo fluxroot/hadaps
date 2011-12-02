@@ -51,7 +51,6 @@
     <subant target="test">
       <property name="continueOnFailure" value="true"/>
       <fileset dir="." includes="fuse-dfs/build.xml"/>
-      <fileset dir="." includes="hdfsproxy/build.xml"/>
       <fileset dir="." includes="streaming/build.xml"/>
       <fileset dir="." includes="fairscheduler/build.xml"/>
       <fileset dir="." includes="capacity-scheduler/build.xml"/>
@@ -76,7 +75,6 @@
        <property name="hadoop.conf.dir" value="${hadoop.conf.dir}"/>
        <property name="hadoop.conf.dir.deployed"
            value="${hadoop.conf.dir.deployed}"/>
-       <fileset dir="." includes="hdfsproxy/build.xml"/>
        <fileset dir="." includes="streaming/build.xml"/>
        <fileset dir="." includes="fairscheduler/build.xml"/>
        <fileset dir="." includes="capacity-scheduler/build.xml"/>
