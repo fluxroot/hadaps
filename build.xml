@@ -1081,7 +1081,6 @@
          <param name="-apidir" value="${jdiff.xml.dir}"/>
          <param name="-apiname" value="hadoop ${version}"/>
        </doclet>
-       <packageset dir="src/core"/>
        <packageset dir="src/mapred"/>
        <packageset dir="src/tools"/>
        <classpath >
