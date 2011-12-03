@@ -710,7 +710,6 @@
   <patternset id="empty.exclude.list.id" />
     <patternset id="commit.smoke.exclude.list.id">
     <excludesfile name="${test.commit.tests.file}"/>
-    <excludesfile name="${test.smoke.tests.file}"/>
   </patternset>
 
   <!-- ================================================================== -->
@@ -800,7 +799,7 @@
     </sequential>
   </macrodef>
 
-  <target name="test-core" depends="test-commit, test-smoke,
+  <target name="test-core" depends="test-commit, 
     test-core-excluding-commit-and-smoke,
     test-core-all-withtestcaseonly, jar-test"
     description="Run core unit tests">
