@@ -2078,13 +2078,12 @@ public class JobHistory {
       isRunning = true; 
       try {
         FileStatus[] historyFiles = DONEDIR_FS.listStatus(DONE);
+
         // delete if older than 30 days
-        if (historyFiles != null) {
-          for (FileStatus f : historyFiles) {
-            if (now - f.getModificationTime() > THIRTY_DAYS_IN_MS) {
-              DONEDIR_FS.delete(f.getPath(), true); 
-              LOG.info("Deleting old history file : " + f.getPath());
-            }
+        for (FileStatus f : historyFiles) {
+          if (now - f.getModificationTime() > THIRTY_DAYS_IN_MS) {
+            DONEDIR_FS.delete(f.getPath(), true); 
+            LOG.info("Deleting old history file : " + f.getPath());
           }
         }
 

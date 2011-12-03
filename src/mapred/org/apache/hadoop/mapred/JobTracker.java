@@ -2255,8 +2255,14 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
           }
         } catch (FileNotFoundException fnf) {} //ignore
         // Make sure that the backup data is preserved
-        FileStatus[] systemDirData = fs.listStatus(this.systemDir);
-        // Check if the history is enabled .. as we cant have persistence with 
+        FileStatus[] systemDirData;
+        try {
+          systemDirData = fs.listStatus(this.systemDir);
+        } catch (FileNotFoundException fnfe) {
+          systemDirData = null;
+        }
+        
+        // Check if the history is enabled .. as we can't have persistence with 
         // history disabled
         if (conf.getBoolean("mapred.jobtracker.restart.recover", false) 
             && systemDirData != null) {
