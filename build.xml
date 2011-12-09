@@ -1790,10 +1790,30 @@
          classpathref="mvn-ant-task.classpath"/>
   </target>  
 
-  <target name="mvn-install" depends=""
-     description="To install hadoop core and test jars to local filesystem's m2 cache">
-    <echo>To install Cloudera hadoop core and test jars into Maven cache, run "mvn -f cloudera-pom.xml install" from this directory.</echo>
-  </target>
+	  <target name="mvn-install" depends="mvn-taskdef,bin-package,set-version"
+	     description="To install hadoop core and test jars to local filesystem's m2 cache">
+	     <artifact:pom file="${hadoop-core.pom}" id="hadoop.core"/>
+	     <artifact:pom file="${hadoop-test.pom}" id="hadoop.test"/>
+	     <artifact:pom file="${hadoop-examples.pom}" id="hadoop.examples"/>
+	     <artifact:pom file="${hadoop-tools.pom}" id="hadoop.tools"/>
+	     <artifact:pom file="${hadoop-streaming.pom}" id="hadoop.streaming"/>
+
+	     <artifact:install file="${hadoop-core.jar}">
+	        <pom refid="hadoop.core"/>
+	     </artifact:install>
+	     <artifact:install file="${hadoop-test.jar}">
+	        <pom refid="hadoop.test"/>
+	     </artifact:install>
+	     <artifact:install file="${hadoop-tools.jar}">
+	        <pom refid="hadoop.tools"/>
+	     </artifact:install>
+	     <artifact:install file="${hadoop-examples.jar}">
+	        <pom refid="hadoop.examples"/>
+	     </artifact:install>
+	     <artifact:install file="${hadoop-streaming.jar}">
+	        <pom refid="hadoop.streaming"/>
+	     </artifact:install>
+	  </target>
 
   <target name="mvn-deploy" depends="mvn-taskdef, bin-package, set-version, signanddeploy, simpledeploy"
      description="To deploy hadoop core and test jar's to apache maven repository"/>
