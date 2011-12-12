@@ -109,6 +109,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.VersionInfo;
 
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapreduce.ClusterMetrics;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.mapreduce.security.token.DelegationTokenRenewal;
@@ -3914,7 +3915,7 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
             totalReduces,
             totalMapTaskCapacity,
             totalReduceTaskCapacity, 
-            state, getExcludedNodes().size()
+            JobTrackerStatus.valueOf(state.name()), getExcludedNodes().size()
             );
       } else {
         return new ClusterStatus(taskTrackers.size() - 
@@ -3925,7 +3926,7 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
             totalReduces,
             totalMapTaskCapacity,
             totalReduceTaskCapacity, 
-            state, getExcludedNodes().size());          
+            JobTrackerStatus.valueOf(state.name()), getExcludedNodes().size());
       }
     }
   }

@@ -40,6 +40,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.ipc.ProtocolSignature;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapreduce.split.SplitMetaInfoReader;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitMetaInfo;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -502,7 +503,7 @@ class LocalJobRunner implements JobSubmissionProtocol {
   
   public ClusterStatus getClusterStatus(boolean detailed) {
     return new ClusterStatus(1, 0, 0, map_tasks, reduce_tasks, 1, 1, 
-                             JobTracker.State.RUNNING);
+                             JobTrackerStatus.RUNNING);
   }
 
   public JobStatus[] jobsToComplete() {return null;}

@@ -33,6 +33,7 @@ import org.apache.hadoop.net.DNSToSwitchMapping;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.StaticMapping;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
 
@@ -635,8 +636,8 @@ public class MiniMRCluster {
     ClusterStatus status = null;
     if (jobTracker.isUp()) {
       status = jobTracker.getJobTracker().getClusterStatus(false);
-      while (jobTracker.isActive() && status.getJobTrackerState() 
-             == JobTracker.State.INITIALIZING) {
+      while (jobTracker.isActive() && status.getJobTrackerStatus() 
+             == JobTrackerStatus.INITIALIZING) {
         try {
           LOG.info("JobTracker still initializing. Waiting.");
           Thread.sleep(1000);

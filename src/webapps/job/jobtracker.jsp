@@ -98,7 +98,7 @@
   </ul>
 </div>
 
-<b>State:</b> <%= status.getJobTrackerState() %><br>
+<b>State:</b> <%= status.getJobTrackerStatus() %><br>
 <b>Started:</b> <%= new Date(tracker.getStartTime())%><br>
 <b>Version:</b> <%= VersionInfo.getVersion()%>,
                 <%= VersionInfo.getRevision()%><br>

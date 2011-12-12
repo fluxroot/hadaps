@@ -27,6 +27,7 @@ import java.util.Iterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.TaskStatus.Phase;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapreduce.split.*;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitMetaInfo;
 
@@ -59,7 +60,7 @@ public class FakeObjectUtilities {
     @Override
     public ClusterStatus getClusterStatus(boolean detailed) {
       return new ClusterStatus(trackers.length,
-          0, 0, 0, 0, totalSlots/2, totalSlots/2, JobTracker.State.RUNNING, 0);
+          0, 0, 0, 0, totalSlots/2, totalSlots/2, JobTrackerStatus.RUNNING, 0);
     }
 
     public void setNumSlots(int totalSlots) {

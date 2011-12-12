@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.JobStatusChangeEvent.EventType;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.mapreduce.server.jobtracker.TaskTracker;
 import org.apache.hadoop.mapreduce.split.JobSplit;
@@ -489,7 +490,7 @@ public class TestCapacityScheduler extends TestCase {
       return new ClusterStatus(numTrackers, maps, reduces,
           numTrackers * maxMapTasksPerTracker,
           numTrackers * maxReduceTasksPerTracker,
-          JobTracker.State.RUNNING);
+          JobTrackerStatus.RUNNING);
     }
 
     public int getNumberOfUniqueHosts() {

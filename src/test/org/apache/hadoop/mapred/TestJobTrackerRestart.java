@@ -372,7 +372,7 @@ public class TestJobTrackerRestart extends TestCase {
   
   private boolean checkClusterStatusOnCompletion(ClusterStatus status, 
                                                  ClusterStatus prevStatus) {
-    return status.getJobTrackerState() == prevStatus.getJobTrackerState()
+    return status.getJobTrackerStatus() == prevStatus.getJobTrackerStatus()
            && status.getMapTasks() == 0
            && status.getReduceTasks() == 0;
   }

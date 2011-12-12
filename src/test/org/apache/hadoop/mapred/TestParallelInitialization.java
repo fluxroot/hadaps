@@ -27,6 +27,7 @@ import java.util.Map;
 import junit.framework.TestCase;
 
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapred.JobInProgress.KillInterruptedException;
 import org.apache.hadoop.mapred.JobStatusChangeEvent.EventType;
 
@@ -102,7 +103,7 @@ public class TestParallelInitialization extends TestCase {
                                maps, reduces,
                                numTrackers * maxMapTasksPerTracker,
                                numTrackers * maxReduceTasksPerTracker,
-                               JobTracker.State.RUNNING);
+                               JobTrackerStatus.RUNNING);
     }
     
     public int getNumberOfUniqueHosts() {

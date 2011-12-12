@@ -33,6 +33,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.mapred.MiniMRCluster.JobTrackerRunner;
 import org.apache.hadoop.mapred.QueueManager.QueueACL;
 import org.apache.hadoop.mapred.TestJobInProgressListener.MyScheduler;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.*;
 
@@ -130,7 +131,7 @@ public class TestRecoveryManager extends TestCase {
     
     // check if the jobtracker came up or not
     assertEquals("JobTracker crashed!", 
-                 JobTracker.State.RUNNING, status.getJobTrackerState());
+                 JobTrackerStatus.RUNNING, status.getJobTrackerStatus());
     
     mr.shutdown();
   }

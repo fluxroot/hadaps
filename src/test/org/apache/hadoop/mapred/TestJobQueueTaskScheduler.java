@@ -27,6 +27,7 @@ import java.util.Map;
 import junit.framework.TestCase;
 
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.apache.hadoop.mapreduce.server.jobtracker.TaskTracker;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 
@@ -149,7 +150,7 @@ public class TestJobQueueTaskScheduler extends TestCase {
                                maps, reduces,
                                numTrackers * maxMapTasksPerTracker,
                                numTrackers * maxReduceTasksPerTracker,
-                               JobTracker.State.RUNNING);
+                               JobTrackerStatus.RUNNING);
     }
 
     @Override
