@@ -185,7 +185,7 @@ class LocalJobRunner implements JobSubmissionProtocol {
     @Override
     public void run() {
       JobID jobId = profile.getJobID();
-      JobContext jContext = new JobContext(conf, jobId);
+      JobContext jContext = new JobContextImpl(conf, jobId);
       OutputCommitter outputCommitter = job.getOutputCommitter();
       try {
         TaskSplitMetaInfo[] taskSplitMetaInfos =

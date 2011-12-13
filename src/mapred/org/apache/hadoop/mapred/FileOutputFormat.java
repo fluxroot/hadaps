@@ -234,7 +234,7 @@ public abstract class FileOutputFormat<K, V> implements OutputFormat<K, V> {
 
     OutputCommitter committer = conf.getOutputCommitter();
     Path workPath = outputPath;
-    TaskAttemptContext context = new TaskAttemptContext(conf,
+    TaskAttemptContext context = new TaskAttemptContextImpl(conf,
                 TaskAttemptID.forName(conf.get("mapred.task.id")));
     if (committer instanceof FileOutputCommitter) {
       workPath = ((FileOutputCommitter)committer).getWorkPath(context,

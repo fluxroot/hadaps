@@ -40,6 +40,7 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 
 public class TestCombineFileInputFormat extends TestCase {
 
@@ -171,7 +172,7 @@ public class TestCombineFileInputFormat extends TestCase {
     TaskAttemptID taskId = new TaskAttemptID("jt", 0, true, 0, 0);
     Configuration conf1 = new Configuration();
     conf1.set(DUMMY_KEY, "STATE1");
-    TaskAttemptContext context1 = new TaskAttemptContext(conf1, taskId);
+    TaskAttemptContext context1 = new TaskAttemptContextImpl(conf1, taskId);
 
     // This will create a CombineFileRecordReader that itself contains a
     // DummyRecordReader.
@@ -193,7 +194,7 @@ public class TestCombineFileInputFormat extends TestCase {
     // Switch the active context for the RecordReader...
     Configuration conf2 = new Configuration();
     conf2.set(DUMMY_KEY, "STATE2");
-    TaskAttemptContext context2 = new TaskAttemptContext(conf2, taskId);
+    TaskAttemptContext context2 = new TaskAttemptContextImpl(conf2, taskId);
     rr.initialize(split, context2);
 
     // And verify that the new context is updated into the child record reader.
@@ -207,7 +208,7 @@ public class TestCombineFileInputFormat extends TestCase {
     // called a second time.
     TaskAttemptID taskId = new TaskAttemptID("jt", 0, true, 0, 0);
     Configuration conf = new Configuration();
-    TaskAttemptContext context = new TaskAttemptContext(conf, taskId);
+    TaskAttemptContext context = new TaskAttemptContextImpl(conf, taskId);
 
     // This will create a CombineFileRecordReader that itself contains a
     // DummyRecordReader.

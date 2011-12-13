@@ -19,36 +19,18 @@ package org.apache.hadoop.mapred;
 
 import org.apache.hadoop.util.Progressable;
 
-public class JobContext extends org.apache.hadoop.mapreduce.JobContext {
-  private JobConf job;
-  private Progressable progress;
-
-  JobContext(JobConf conf, org.apache.hadoop.mapreduce.JobID jobId, 
-             Progressable progress) {
-    super(conf, jobId);
-    this.job = conf;
-    this.progress = progress;
-  }
-
-  JobContext(JobConf conf, org.apache.hadoop.mapreduce.JobID jobId) {
-    this(conf, jobId, Reporter.NULL);
-  }
-  
+public interface JobContext extends org.apache.hadoop.mapreduce.JobContext {
   /**
    * Get the job Configuration
    * 
    * @return JobConf
    */
-  public JobConf getJobConf() {
-    return job;
-  }
+  public JobConf getJobConf();
   
   /**
    * Get the progress mechanism for reporting progress.
    * 
    * @return progress mechanism 
    */
-  public Progressable getProgressible() {
-    return progress;
-  }
+  public Progressable getProgressible();
 }

@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.ipc.ProtocolSignature;
+import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapred.SortedRanges.Range;
 import org.apache.hadoop.mapreduce.TaskType;
 
@@ -210,7 +211,7 @@ public class TestTaskCommit extends HadoopTestCase {
     String dummyAttemptID = "attempt_200707121733_0001_m_000000_0";
     TaskAttemptID attemptID = TaskAttemptID.forName(dummyAttemptID);
     OutputCommitter committer = new CommitterWithoutCleanup();
-    JobContext jContext = new JobContext(job, attemptID.getJobID());
+    JobContext jContext = new JobContextImpl(job, attemptID.getJobID());
     committer.setupJob(jContext);
     
 

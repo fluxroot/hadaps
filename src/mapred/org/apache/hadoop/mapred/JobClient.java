@@ -859,7 +859,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
             job.setJobSubmitHostAddress(ip.getHostAddress());
             job.setJobSubmitHostName(ip.getHostName());
           }
-          JobContext context = new JobContext(jobCopy, jobId);
+          JobContext context = new JobContextImpl(jobCopy, jobId);
 
           jobCopy = (JobConf)context.getConfiguration();
 

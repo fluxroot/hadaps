@@ -20,16 +20,41 @@ package org.apache.hadoop.mapred;
 import org.apache.hadoop.util.Progressable;
 
 /**
- * @deprecated Use {@link org.apache.hadoop.mapreduce.TaskAttemptContext}
- *   instead.
+ * @deprecated Use {@link org.apache.hadoop.mapreduce.JobContext} instead.
  */
 @Deprecated
-public interface TaskAttemptContext 
-    extends org.apache.hadoop.mapreduce.TaskAttemptContext {
+public class JobContextImpl 
+    extends org.apache.hadoop.mapreduce.task.JobContextImpl 
+    implements JobContext {
+  private JobConf job;
+  private Progressable progress;
 
-  public TaskAttemptID getTaskAttemptID();
+  JobContextImpl(JobConf conf, org.apache.hadoop.mapreduce.JobID jobId, 
+                 Progressable progress) {
+    super(conf, jobId);
+    this.job = conf;
+    this.progress = progress;
+  }
 
-  public Progressable getProgressible();
+  JobContextImpl(JobConf conf, org.apache.hadoop.mapreduce.JobID jobId) {
+    this(conf, jobId, Reporter.NULL);
+  }
   
-  public JobConf getJobConf();
+  /**
+   * Get the job Configuration
+   * 
+   * @return JobConf
+   */
+  public JobConf getJobConf() {
+    return job;
+  }
+  
+  /**
+   * Get the progress mechanism for reporting progress.
+   * 
+   * @return progress mechanism 
+   */
+  public Progressable getProgressible() {
+    return progress;
+  }
 }

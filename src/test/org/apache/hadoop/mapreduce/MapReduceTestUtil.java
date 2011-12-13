@@ -50,6 +50,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
 
 /**
@@ -375,7 +376,7 @@ public class MapReduceTestUtil {
   public static TaskAttemptContext createDummyMapTaskAttemptContext(
       Configuration conf) {
     TaskAttemptID tid = new TaskAttemptID("jt", 1, true, 0, 0);
-    return new TaskAttemptContext(conf, tid);    
+    return new TaskAttemptContextImpl(conf, tid);    
   }
 
   public static StatusReporter createDummyReporter() {
