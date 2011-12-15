@@ -86,7 +86,7 @@ public class TaskInProgress {
   private volatile boolean skipping = false;
   private boolean jobCleanup = false; 
   private boolean jobSetup = false;
-   
+  
   // The 'next' usable taskid of this tip
   int nextTaskId = 0;
     
@@ -890,7 +890,7 @@ public class TaskInProgress {
           if (status.getProgress() >= bestProgress) {
             bestProgress = status.getProgress();
             bestState = status.getStateString();
-            if (status.getIncludeCounters()) {
+            if (status.getIncludeAllCounters()) {
               bestCounters = status.getCounters();
             } else {
               bestCounters = this.counters;

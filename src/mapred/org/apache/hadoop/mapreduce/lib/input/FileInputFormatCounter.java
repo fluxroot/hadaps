@@ -16,18 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapreduce;
+package org.apache.hadoop.mapreduce.lib.input;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.mapreduce.counters.CounterGroupBase;
 
-/**
- * A group of {@link Counter}s that logically belong together. Typically,
- * it is an {@link Enum} subclass and the counters are the values.
- */
+// Counters used by Task classes
 @InterfaceAudience.Public
-@InterfaceStability.Stable
-public interface CounterGroup extends CounterGroupBase<Counter> {
-  // essentially a typedef so user doesn't have to use generic syntax
+@InterfaceStability.Evolving
+public enum FileInputFormatCounter {
+  BYTES_READ
 }

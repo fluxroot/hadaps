@@ -15,19 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.mapreduce;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.mapreduce.counters.CounterGroupBase;
 
-/**
- * A group of {@link Counter}s that logically belong together. Typically,
- * it is an {@link Enum} subclass and the counters are the values.
- */
-@InterfaceAudience.Public
-@InterfaceStability.Stable
-public interface CounterGroup extends CounterGroupBase<Counter> {
-  // essentially a typedef so user doesn't have to use generic syntax
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public interface MRJobConfig {
+
+  public static final String COUNTERS_MAX_KEY = "mapreduce.job.counters.max";
+  public static final int COUNTERS_MAX_DEFAULT = 120;
+
+  public static final String COUNTER_GROUP_NAME_MAX_KEY = "mapreduce.job.counters.group.name.max";
+  public static final int COUNTER_GROUP_NAME_MAX_DEFAULT = 128;
+
+  public static final String COUNTER_NAME_MAX_KEY = "mapreduce.job.counters.counter.name.max";
+  public static final int COUNTER_NAME_MAX_DEFAULT = 64;
+
+  public static final String COUNTER_GROUPS_MAX_KEY = "mapreduce.job.counters.groups.max";
+  public static final int COUNTER_GROUPS_MAX_DEFAULT = 50;
 }

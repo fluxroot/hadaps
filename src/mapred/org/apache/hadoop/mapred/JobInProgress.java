@@ -52,6 +52,7 @@ import org.apache.hadoop.mapred.JobHistory.Values;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.mapreduce.counters.LimitExceededException;
 import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.DelegationTokenRenewal;
 import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
@@ -1308,8 +1309,12 @@ public class JobInProgress {
    */
   private Counters incrementTaskCounters(Counters counters,
                                          TaskInProgress[] tips) {
-    for (TaskInProgress tip : tips) {
-      counters.incrAllCounters(tip.getCounters());
+    try {
+      for (TaskInProgress tip : tips) {
+        counters.incrAllCounters(tip.getCounters());
+      }
+    } catch (LimitExceededException e) {
+      // too many user counters/groups, leaving existing counters intact.
     }
     return counters;
   }
@@ -2686,9 +2691,15 @@ public class JobInProgress {
       this.status.setCleanupProgress(1.0f);
       if (maps.length == 0) {
         this.status.setMapProgress(1.0f);
+        if (canLaunchJobCleanupTask()) {
+          checkCountersLimitsOrFail();
+        }
       }
       if (reduces.length == 0) {
         this.status.setReduceProgress(1.0f);
+        if (canLaunchJobCleanupTask()) {
+          checkCountersLimitsOrFail();
+        }
       }
      
       this.finishTime = jobtracker.getClock().getTime();
@@ -2722,6 +2733,19 @@ public class JobInProgress {
       garbageCollect();
       
       metrics.completeJob(this.conf, this.status.getJobID());
+    }
+  }
+
+  /*
+   * add up the counters and fail the job if it exceeds the limits.
+   * Make sure we do not recalculate the counters after we fail the job.
+   * Currently this is taken care by terminateJob() since it does not
+   * calculate the counters.
+   */
+  private void checkCountersLimitsOrFail() {
+    Counters counters = getCounters();
+    if (counters.limits().violation() != null) {
+      jobtracker.failJob(this);
     }
   }
   

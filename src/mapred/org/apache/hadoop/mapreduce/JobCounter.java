@@ -20,14 +20,20 @@ package org.apache.hadoop.mapreduce;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.mapreduce.counters.CounterGroupBase;
 
-/**
- * A group of {@link Counter}s that logically belong together. Typically,
- * it is an {@link Enum} subclass and the counters are the values.
- */
+// Per-job counters
 @InterfaceAudience.Public
-@InterfaceStability.Stable
-public interface CounterGroup extends CounterGroupBase<Counter> {
-  // essentially a typedef so user doesn't have to use generic syntax
+@InterfaceStability.Evolving
+public enum JobCounter {
+  NUM_FAILED_MAPS, 
+  NUM_FAILED_REDUCES,
+  TOTAL_LAUNCHED_MAPS,
+  TOTAL_LAUNCHED_REDUCES,
+  OTHER_LOCAL_MAPS,
+  DATA_LOCAL_MAPS,
+  RACK_LOCAL_MAPS,
+  SLOTS_MILLIS_MAPS,
+  SLOTS_MILLIS_REDUCES,
+  FALLOW_SLOTS_MILLIS_MAPS,
+  FALLOW_SLOTS_MILLIS_REDUCES
 }
