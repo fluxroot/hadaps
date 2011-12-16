@@ -25,6 +25,8 @@ import java.util.Random;
 
 import org.apache.hadoop.mapred.Counters.Counter;
 
+import org.apache.hadoop.mapred.Counters.Counter;
+import org.apache.hadoop.mapreduce.FileSystemCounter;
 import org.apache.hadoop.mapreduce.JobCounter;
 import org.apache.hadoop.mapreduce.TaskCounter;
 import org.junit.Test;
@@ -132,6 +134,7 @@ public class TestCounters {
     Counters counters = new Counters();
     counters.incrCounter(TaskCounter.MAP_INPUT_RECORDS, 1);
     counters.incrCounter(JobCounter.DATA_LOCAL_MAPS, 1);
+    counters.findCounter("file", FileSystemCounter.BYTES_READ).increment(1);
     
     assertEquals("New name", 1, counters.findCounter(
         TaskCounter.class.getName(), "MAP_INPUT_RECORDS").getValue());
@@ -144,6 +147,14 @@ public class TestCounters {
     assertEquals("Legacy name", 1, counters.findCounter(
         "org.apache.hadoop.mapred.JobInProgress$Counter",
         "DATA_LOCAL_MAPS").getValue());
+
+    assertEquals("New name", 1, counters.findCounter(
+        FileSystemCounter.class.getName(), "FILE_BYTES_READ").getValue());
+    assertEquals("New name and method", 1, counters.findCounter("file",
+        FileSystemCounter.BYTES_READ).getValue());
+    assertEquals("Legacy name", 1, counters.findCounter(
+        "FileSystemCounter",
+        "FILE_BYTES_READ").getValue());
   }
   
   public static void main(String[] args) throws IOException {
