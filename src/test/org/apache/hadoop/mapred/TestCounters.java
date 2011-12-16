@@ -17,17 +17,22 @@
  */
 package org.apache.hadoop.mapred;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Random;
 
 import org.apache.hadoop.mapred.Counters.Counter;
 
+import org.apache.hadoop.mapreduce.JobCounter;
+import org.apache.hadoop.mapreduce.TaskCounter;
+import org.junit.Test;
+
 /**
  * TestCounters checks the sanity and recoverability of {@code Counters}
  */
-public class TestCounters extends TestCase {
+public class TestCounters {
   enum myCounters {TEST1, TEST2};
   private static final long MAX_VALUE = 10;
   
@@ -70,9 +75,10 @@ public class TestCounters extends TestCase {
                  counter.hashCode(), recoveredCounter.hashCode());
   }
   
+  @Test
   public void testCounters() throws IOException {
-    Enum[] keysWithResource = {Task.Counter.MAP_INPUT_BYTES, 
-                               Task.Counter.MAP_OUTPUT_BYTES};
+    Enum[] keysWithResource = {TaskCounter.MAP_INPUT_RECORDS, 
+                               TaskCounter.MAP_OUTPUT_BYTES};
     
     Enum[] keysWithoutResource = {myCounters.TEST1, myCounters.TEST2};
     
@@ -118,6 +124,26 @@ public class TestCounters extends TestCase {
       assertEquals("Counter value is not set correctly",
                    expectedValue, counter.getValue());
     }
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void testLegacyNames() {
+    Counters counters = new Counters();
+    counters.incrCounter(TaskCounter.MAP_INPUT_RECORDS, 1);
+    counters.incrCounter(JobCounter.DATA_LOCAL_MAPS, 1);
+    
+    assertEquals("New name", 1, counters.findCounter(
+        TaskCounter.class.getName(), "MAP_INPUT_RECORDS").getValue());
+    assertEquals("Legacy name", 1, counters.findCounter(
+        "org.apache.hadoop.mapred.Task$Counter",
+        "MAP_INPUT_RECORDS").getValue());
+
+    assertEquals("New name", 1, counters.findCounter(
+        JobCounter.class.getName(), "DATA_LOCAL_MAPS").getValue());
+    assertEquals("Legacy name", 1, counters.findCounter(
+        "org.apache.hadoop.mapred.JobInProgress$Counter",
+        "DATA_LOCAL_MAPS").getValue());
   }
   
   public static void main(String[] args) throws IOException {
