@@ -24,13 +24,13 @@
   <parent>
     <groupId>com.cloudera.cdh</groupId>
     <artifactId>hadoop-root</artifactId>
-    <version>3.0-u3</version>
+    <version>4.0-a1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-streaming</artifactId>
-  <version>0.20.2-cdh3u3</version>
+  <version>0.20.2-cdh4a1-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <name>hadoop-streaming</name>
