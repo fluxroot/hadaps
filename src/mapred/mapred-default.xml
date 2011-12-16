@@ -1221,13 +1221,6 @@
   </description>
 </property>
 
-<property>
-  <name>mapreduce.job.counters.limit</name>
-  <value>120</value>
-  <description>Limit on the number of counters allowed per job.
-  </description>
-</property>
-
 <!--  end of node health script variables -->
 
 </configuration>

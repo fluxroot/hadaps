@@ -36,6 +36,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,10 +45,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.AuditLogger;
 import org.apache.hadoop.mapred.CleanupQueue.PathDeletionContext;
-import org.apache.hadoop.mapred.Counters.CountersExceededException;
-import org.apache.hadoop.mapred.Counters.Group;
+import org.apache.hadoop.mapred.AuditLogger;
 import org.apache.hadoop.mapred.JobHistory.Values;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
@@ -122,7 +121,7 @@ public class JobInProgress {
   long reduce_input_limit = -1L;
   private static float DEFAULT_COMPLETED_MAPS_PERCENT_FOR_REDUCE_SLOWSTART = 0.05f;
   int completedMapsForReduceSlowstart = 0;
-    
+  
   // runningMapTasks include speculative tasks, so we need to capture 
   // speculative tasks separately 
   int speculativeMapTasks = 0;
@@ -506,9 +505,7 @@ public class JobInProgress {
    * this job.
    */
   public void updateMetrics() {
-    Counters counters = new Counters();
-    boolean isFine = getCounters(counters);
-    counters = (isFine? counters: new Counters());
+    Counters counters = getCounters();
     for (Counters.Group group : counters) {
       jobMetrics.setTag("group", group.getDisplayName());
       for (Counters.Counter counter : group) {
@@ -816,8 +813,7 @@ public class JobInProgress {
   TaskSplitMetaInfo[] createSplits(org.apache.hadoop.mapreduce.JobID jobId)
   throws IOException {
     TaskSplitMetaInfo[] allTaskSplitMetaInfo =
-      SplitMetaInfoReader.readSplitMetaInfo(jobId, fs, jobtracker.getConf(),
-          jobSubmitDir);
+      SplitMetaInfoReader.readSplitMetaInfo(jobId, fs, conf, jobSubmitDir);
     return allTaskSplitMetaInfo;
   }
 
@@ -1053,7 +1049,6 @@ public class JobInProgress {
     }
     return results;
   }
-  
 
   ////////////////////////////////////////////////////
   // Status update methods
@@ -1258,47 +1253,27 @@ public class JobInProgress {
   
   /**
    *  Returns map phase counters by summing over all map tasks in progress.
-   *  This method returns true if counters are within limit or false.
    */
-  public synchronized boolean getMapCounters(Counters counters) {
-    try {
-      counters = incrementTaskCounters(counters, maps);
-    } catch(CountersExceededException ce) {
-      LOG.info("Counters Exceeded for Job: " + jobId, ce);
-      return false;
-    }
-    return true;
+  public synchronized Counters getMapCounters() {
+    return incrementTaskCounters(new Counters(), maps);
   }
     
   /**
    *  Returns map phase counters by summing over all map tasks in progress.
-   *  This method returns true if counters are within limits and false otherwise.
    */
-  public synchronized boolean getReduceCounters(Counters counters) {
-    try {
-      counters = incrementTaskCounters(counters, reduces);
-    } catch(CountersExceededException ce) {
-      LOG.info("Counters Exceeded for Job: " + jobId, ce);
-      return false;
-    }
-    return true;
+  public synchronized Counters getReduceCounters() {
+    return incrementTaskCounters(new Counters(), reduces);
   }
     
   /**
    *  Returns the total job counters, by adding together the job, 
-   *  the map and the reduce counters. This method returns true if
-   *  counters are within limits and false otherwise.
+   *  the map and the reduce counters.
    */
-  public synchronized boolean getCounters(Counters result) {
-    try {
-      result.incrAllCounters(getJobCounters());
-      incrementTaskCounters(result, maps);
-      incrementTaskCounters(result, reduces);
-    } catch(CountersExceededException ce) {
-      LOG.info("Counters Exceeded for Job: " + jobId, ce);
-      return false;
-    }
-    return true;
+  public synchronized Counters getCounters() {
+    Counters result = new Counters();
+    result.incrAllCounters(getJobCounters());
+    incrementTaskCounters(result, maps);
+    return incrementTaskCounters(result, reduces);
   }
     
   /**
@@ -2610,9 +2585,6 @@ public class JobInProgress {
       retireMap(tip);
       if ((finishedMapTasks + failedMapTIPs) == (numMapTasks)) {
         this.status.setMapProgress(1.0f);
-        if (canLaunchJobCleanupTask()) {
-          checkCounterLimitsAndFail();
-        }
       }
     } else {
       runningReduceTasks -= 1;
@@ -2625,33 +2597,12 @@ public class JobInProgress {
       retireReduce(tip);
       if ((finishedReduceTasks + failedReduceTIPs) == (numReduceTasks)) {
         this.status.setReduceProgress(1.0f);
-        if (canLaunchJobCleanupTask()) {
-          checkCounterLimitsAndFail();
-        }
       }
     }
+    
     return true;
   }
-  
-  /**
-   * add up the counters and fail the job
-   * if it exceeds the counters. Make sure we do not
-   * recalculate the coutners after we fail the job. Currently
-   * this is taken care by terminateJob() since it does not 
-   * calculate the counters.
-   */
-  private void checkCounterLimitsAndFail() {
-    boolean mapIsFine, reduceIsFine, jobIsFine = true;
-    mapIsFine = getMapCounters(new Counters());
-    reduceIsFine = getReduceCounters(new Counters());
-    jobIsFine = getCounters(new Counters());
-    if (!(mapIsFine && reduceIsFine && jobIsFine)) {
-      status.setFailureInfo("Counters Exceeded: Limit: " + 
-          Counters.MAX_COUNTER_LIMIT);
-      jobtracker.failJob(this);
-    }
-  }
-  
+
   /**
    * Job state change must happen thru this call
    */
@@ -2701,33 +2652,20 @@ public class JobInProgress {
           checkCountersLimitsOrFail();
         }
       }
-     
       this.finishTime = jobtracker.getClock().getTime();
       LOG.info("Job " + this.status.getJobID() + 
-      " has completed successfully.");
-
+               " has completed successfully.");
+      
       // Log the job summary (this should be done prior to logging to 
       // job-history to ensure job-counters are in-sync 
       JobSummary.logJobSummary(this, jobtracker.getClusterStatus(false));
-      
-      Counters mapCounters = new Counters();
-      boolean isFine = getMapCounters(mapCounters);
-      mapCounters = (isFine ? mapCounters: new Counters());
-      Counters reduceCounters = new Counters();
-      isFine = getReduceCounters(reduceCounters);;
-      reduceCounters = (isFine ? reduceCounters: new Counters());
-      Counters jobCounters = new Counters();
-      isFine = getCounters(jobCounters);
-      jobCounters = (isFine? jobCounters: new Counters());
       
       // Log job-history
       JobHistory.JobInfo.logFinished(this.status.getJobID(), finishTime, 
                                      this.finishedMapTasks, 
                                      this.finishedReduceTasks, failedMapTasks, 
-                                     failedReduceTasks, mapCounters,
-                                     reduceCounters, jobCounters);
-      
-      
+                                     failedReduceTasks, getMapCounters(),
+                                     getReduceCounters(), getCounters());
       // Note that finalize will close the job history handles which garbage collect
       // might try to finalize
       garbageCollect();

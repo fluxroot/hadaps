@@ -20,7 +20,6 @@ package org.apache.hadoop.mapreduce.split;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -33,11 +32,9 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobSubmissionFiles;
 import org.apache.hadoop.mapreduce.split.JobSplit.SplitMetaInfo;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * The class that is used by the Job clients to write splits (both the meta
@@ -45,11 +42,8 @@ import org.apache.commons.logging.LogFactory;
  */
 public class JobSplitWriter {
 
-  private static final Log LOG = LogFactory.getLog(JobSplitWriter.class);
   private static final int splitVersion = JobSplit.META_SPLIT_VERSION;
   private static final byte[] SPLIT_FILE_HEADER;
-  static final String MAX_SPLIT_LOCATIONS = "mapreduce.job.max.split.locations";
-  
   static {
     try {
       SPLIT_FILE_HEADER = "SPL".getBytes("UTF-8");
@@ -79,12 +73,12 @@ public class JobSplitWriter {
   }
   
   public static void createSplitFiles(Path jobSubmitDir, 
-      Configuration conf, FileSystem   fs, 
+      Configuration conf, FileSystem fs, 
       org.apache.hadoop.mapred.InputSplit[] splits) 
   throws IOException {
     FSDataOutputStream out = createFile(fs, 
         JobSubmissionFiles.getJobSplitFile(jobSubmitDir), conf);
-    SplitMetaInfo[] info = writeOldSplits(splits, out, conf);
+    SplitMetaInfo[] info = writeOldSplits(splits, out);
     out.close();
     writeJobSplitMetaInfo(fs,JobSubmissionFiles.getJobSplitMetaFile(jobSubmitDir), 
         new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION), splitVersion,
@@ -125,17 +119,9 @@ public class JobSplitWriter {
         serializer.open(out);
         serializer.serialize(split);
         int currCount = out.size();
-        String[] locations = split.getLocations();
-        final int max_loc = conf.getInt(MAX_SPLIT_LOCATIONS, 10);
-        if (locations.length > max_loc) {
-          LOG.warn("Max block location exceeded for split: "
-              + split + " splitsize: " + locations.length +
-              " maxsize: " + max_loc);
-          locations = Arrays.copyOf(locations, max_loc);
-        }
         info[i++] = 
           new JobSplit.SplitMetaInfo( 
-              locations, offset,
+              split.getLocations(), offset,
               split.getLength());
         offset += currCount - prevCount;
       }
@@ -145,7 +131,7 @@ public class JobSplitWriter {
   
   private static SplitMetaInfo[] writeOldSplits(
       org.apache.hadoop.mapred.InputSplit[] splits,
-      FSDataOutputStream out, Configuration conf) throws IOException {
+      FSDataOutputStream out) throws IOException {
     SplitMetaInfo[] info = new SplitMetaInfo[splits.length];
     if (splits.length != 0) {
       int i = 0;
@@ -155,16 +141,8 @@ public class JobSplitWriter {
         Text.writeString(out, split.getClass().getName());
         split.write(out);
         int currLen = out.size();
-        String[] locations = split.getLocations();
-        final int max_loc = conf.getInt(MAX_SPLIT_LOCATIONS, 10);
-        if (locations.length > max_loc) {
-          LOG.warn("Max block location exceeded for split: "
-              + split + " splitsize: " + locations.length +
-              " maxsize: " + max_loc);
-          locations = Arrays.copyOf(locations, max_loc);
-        }
         info[i++] = new JobSplit.SplitMetaInfo( 
-            locations, offset,
+            split.getLocations(), offset,
             split.getLength());
         offset += currLen - prevLen;
       }
