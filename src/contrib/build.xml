@@ -28,7 +28,7 @@
   <!-- ====================================================== -->
   <target name="compile">
     <subant target="compile">
-      <fileset dir="." includes="*/build.xml"/>
+      <fileset dir="." includes="*/build.xml" excludes="mrunit/build.xml"/>
     </subant>
   </target>
   
@@ -37,7 +37,7 @@
   <!-- ====================================================== -->
   <target name="package">
     <subant target="package">
-      <fileset dir="." includes="*/build.xml"/>
+      <fileset dir="." includes="*/build.xml" excludes="mrunit/build.xml"/>
     </subant>
   </target>
   
@@ -54,7 +54,6 @@
       <fileset dir="." includes="streaming/build.xml"/>
       <fileset dir="." includes="fairscheduler/build.xml"/>
       <fileset dir="." includes="capacity-scheduler/build.xml"/>
-      <fileset dir="." includes="mrunit/build.xml"/>
       <fileset dir="." includes="gridmix/build.xml"/>
     </subant>
      <available file="${build.contrib.dir}/testsfailed" property="testsfailed"/>
