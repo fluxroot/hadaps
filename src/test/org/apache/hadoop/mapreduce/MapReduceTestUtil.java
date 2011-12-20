@@ -43,6 +43,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputLogFilter;
 import org.apache.hadoop.mapred.Utils;
 import org.apache.hadoop.mapreduce.Job;
@@ -135,7 +136,7 @@ public class MapReduceTestUtil {
   public static Job createCopyJob(Configuration conf, Path outdir, 
       Path... indirs) throws Exception {
     conf.setInt("mapred.map.tasks", 3);
-    Job theJob = new Job(conf);
+    Job theJob = new Job(new JobConf(conf));
     theJob.setJobName("DataMoveJob");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -165,7 +166,7 @@ public class MapReduceTestUtil {
       fs.delete(outdir, true);
     }
     conf.setInt("mapred.map.max.attempts", 2);
-    Job theJob = new Job(conf);
+    Job theJob = new Job(new JobConf(conf));
     theJob.setJobName("Fail-Job");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -190,7 +191,7 @@ public class MapReduceTestUtil {
   public static Job createKillJob(Configuration conf, Path outdir, 
       Path... indirs) throws Exception {
 
-    Job theJob = new Job(conf);
+    Job theJob = new Job(new JobConf(conf));
     theJob.setJobName("Kill-Job");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -352,7 +353,7 @@ public class MapReduceTestUtil {
 
   public static Job createJob(Configuration conf, Path inDir, Path outDir, 
       int numInputFiles, int numReds, String input) throws IOException {
-    Job job = new Job(conf);
+    Job job = new Job(new JobConf(conf));
     FileSystem fs = FileSystem.get(conf);
     if (fs.exists(outDir)) {
       fs.delete(outDir, true);
