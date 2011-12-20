@@ -26,7 +26,7 @@ NOTE - This POM is used for Cloudera's build and packaging process.
   <parent>
     <groupId>com.cloudera.cdh</groupId>
     <artifactId>hadoop-root</artifactId>
-    <version>4.0-a1-SNAPSHOT</version>
+    <version>0.20.2-cdh4a1-SNAPSHOT</version>
     <relativePath>cloudera/maven-packaging/pom.xml</relativePath>
   </parent>
   
