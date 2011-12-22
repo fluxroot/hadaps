@@ -61,6 +61,7 @@
       root="${repo.maven.org}"
       pattern="${maven2.pattern.ext}"
       m2compatible="true"
+      checkconsistency="false"
       />
     <ibiblio name="apache-snapshot"
       root="${snapshot.apache.org}"
