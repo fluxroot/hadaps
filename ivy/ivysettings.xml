@@ -45,6 +45,9 @@
   <property name="ext.releases"
             value="http://repository.cloudera.com/artifactory/ext-release-local/"
             override="false" />
+  <property name="snapshots.cloudera.com"
+            value="https://repository.cloudera.com/artifactory/libs-snapshot-local/"
+            override="false"/>
 
   <!-- pull in the local repository -->
   <include url="${ivy.default.conf.dir}/ivyconf-local.xml"/>
@@ -74,10 +77,19 @@
       pattern="${maven2.pattern.ext}"
       m2compatible="true"
       />
-    <chain name="default" dual="true">
+    <ibiblio name="cloudera-snapshot"
+             root="${snapshots.cloudera.com}"
+             m2compatible="true"
+             checkmodified="true"
+             changingPattern=".*SNAPSHOT"/>
+
+    <chain name="default" dual="true"
+           checkmodified="true"
+           changingPattern=".*SNAPSHOT">
       <resolver ref="local"/>
       <resolver ref="maven2"/>
       <resolver ref="cdh-releases"/>
+      <resolver ref="cloudera-snapshot"/> 
     </chain>
     <chain name="internal">
       <resolver ref="local"/>
@@ -90,6 +102,7 @@
       <resolver ref="maven2"/>
       <resolver ref="cdh-releases"/>
       <resolver ref="apache-snapshot"/>
+      <resolver ref="cloudera-snapshot"/> 
     </chain>
   </resolvers>
   <modules>
