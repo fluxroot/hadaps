@@ -111,7 +111,8 @@
     rather than look for them online.
 
     -->
-    <module organisation="org.apache.hadoop" name=".*" resolver="internal"/>
+    <!-- Commenting out to fix MR2 dependencies. -->
+    <!-- <module organisation="org.apache.hadoop" name=".*" resolver="internal"/> -->
     <!--until commons cli is external, we need to pull it in from the snapshot repository -if present -->
     <module organisation="org.apache.commons" name=".*" resolver="external-and-snapshots"/>
   </modules>
