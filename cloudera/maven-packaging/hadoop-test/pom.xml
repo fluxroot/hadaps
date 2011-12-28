@@ -24,14 +24,14 @@
   <parent>
     <groupId>com.cloudera.cdh</groupId>
     <artifactId>hadoop-root</artifactId>
-    <version>0.20.2-cdh4a1-SNAPSHOT</version>
+    <version>0.20.2-cdh4b1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-test</artifactId>
   <packaging>pom</packaging>
-  <version>0.20.2-cdh4a1-SNAPSHOT</version>
+  <version>0.20.2-cdh4b1-SNAPSHOT</version>
   
   <name>hadoop-test</name>
   
