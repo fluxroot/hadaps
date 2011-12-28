@@ -91,6 +91,11 @@ public class TaskAttemptID extends org.apache.hadoop.mapred.ID {
     return taskId.isMap();
   }
   
+  /**Returns the TaskType of the TaskAttemptID */
+  public TaskType getTaskType() {
+    return taskId.getTaskType();
+  }
+  
   @Override
   public boolean equals(Object o) {
     if (!super.equals(o))

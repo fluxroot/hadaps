@@ -96,6 +96,13 @@ public class TaskID extends org.apache.hadoop.mapred.ID {
     return isMap;
   }
   
+  /**
+   * Get the type of the task
+   */
+  public TaskType getTaskType() {
+    return isMap ? TaskType.MAP : TaskType.REDUCE;
+  }
+  
   @Override
   public boolean equals(Object o) {
     if (!super.equals(o))
