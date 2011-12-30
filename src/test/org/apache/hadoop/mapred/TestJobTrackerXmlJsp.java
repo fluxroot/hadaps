@@ -17,16 +17,23 @@
  */
 package org.apache.hadoop.mapred;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IOUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class TestJobTrackerXmlJsp extends ClusterMapReduceTestCase {
 
@@ -41,6 +48,18 @@ public class TestJobTrackerXmlJsp extends ClusterMapReduceTestCase {
 
     String xmlJspUrl = "http://localhost:" + infoPort + "/jobtracker.jspx";
     LOG.info("Retrieving XML from URL: " + xmlJspUrl);
+    
+    HttpURLConnection connection = (HttpURLConnection)new URL("http://localhost:" + infoPort + "/jobtracker.jspx").openConnection();
+    connection.setRequestMethod("GET");
+    connection.connect();
+
+    InputStream stream = connection.getInputStream();
+
+    BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+    String l ;
+    while ((l = br.readLine()) != null) {
+      System.out.println(l);
+    }
 
     DocumentBuilder parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     Document doc = parser.parse(xmlJspUrl);

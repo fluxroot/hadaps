@@ -103,21 +103,6 @@ public class TestFileSystem extends TestCase {
     fs.delete(READ_DIR, true);
   }
 
-  public static void testCommandFormat() throws Exception {
-    // This should go to TestFsShell.java when it is added.
-    CommandFormat cf;
-    cf= new CommandFormat("copyToLocal", 2,2,"crc","ignoreCrc");
-    assertEquals(cf.parse(new String[] {"-get","file", "-"}, 1).get(1), "-");
-    assertEquals(cf.parse(new String[] {"-get","file","-ignoreCrc","/foo"}, 1).get(1),"/foo");
-    cf = new CommandFormat("tail", 1, 1, "f");
-    assertEquals(cf.parse(new String[] {"-tail","fileName"}, 1).get(0),"fileName");
-    assertEquals(cf.parse(new String[] {"-tail","-f","fileName"}, 1).get(0),"fileName");
-    cf = new CommandFormat("setrep", 2, 2, "R", "w");
-    assertEquals(cf.parse(new String[] {"-setrep","-R","2","/foo/bar"}, 1).get(1), "/foo/bar");
-    cf = new CommandFormat("put", 2, 10000);
-    assertEquals(cf.parse(new String[] {"-put", "-", "dest"}, 1).get(1), "dest"); 
-  }
-
   public static void createControlFile(FileSystem fs,
                                        long megaBytes, int numFiles,
                                        long seed) throws Exception {

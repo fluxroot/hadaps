@@ -86,9 +86,8 @@ public class TestMapReduceLocal extends TestCase {
     MiniMRCluster mr = null;
     try {
       mr = new MiniMRCluster(2, "file:///", 3);
-      Configuration conf = mr.createJobConf();
-      runWordCount(conf);
-      runMultiFileWordCount(conf);
+      runWordCount(mr.createJobConf());
+      runMultiFileWordCount(mr.createJobConf());
     } finally {
       if (mr != null) { mr.shutdown(); }
     }
