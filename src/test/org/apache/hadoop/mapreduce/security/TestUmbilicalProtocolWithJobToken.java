@@ -20,6 +20,7 @@ package org.apache.hadoop.mapreduce.security;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeys.HADOOP_SECURITY_AUTHENTICATION;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,6 +37,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.ipc.Client;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.Server;
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
 import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
 import org.apache.hadoop.mapreduce.security.token.JobTokenSecretManager;
@@ -73,9 +75,12 @@ public class TestUmbilicalProtocolWithJobToken {
 
   @Test
   public void testJobTokenRpc() throws Exception {
+    ProtocolSignature mockPS = mock(ProtocolSignature.class);
+    when(mockPS.getVersion()).thenReturn(TaskUmbilicalProtocol.versionID);
     TaskUmbilicalProtocol mockTT = mock(TaskUmbilicalProtocol.class);
     when(mockTT.getProtocolVersion(anyString(), anyLong())).thenReturn(
         TaskUmbilicalProtocol.versionID);
+    when(mockTT.getProtocolSignature(anyString(), anyLong(), anyInt())).thenReturn(mockPS);
 
     JobTokenSecretManager sm = new JobTokenSecretManager();
     final Server server = RPC.getServer(TaskUmbilicalProtocol.class, mockTT,

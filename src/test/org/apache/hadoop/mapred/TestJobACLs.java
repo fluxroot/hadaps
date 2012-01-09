@@ -249,17 +249,17 @@ public class TestJobACLs {
         // Tests authorization failure with getCounters
         try {
           myJob.getCounters();
-          fail("AccessControlException expected..");
+          fail("'cannot perform operation VIEW_JOB_COUNTERS' expected..");
         } catch (IOException ioe) {
-          assertTrue(ioe.getMessage().contains("AccessControlException"));
+          assertTrue(ioe.getMessage(), ioe.getMessage().contains("cannot perform operation VIEW_JOB_COUNTERS"));
         }
 
         // Tests authorization failure with getTaskReports
         try {
           client.getSetupTaskReports(jobId);
-          fail("AccessControlException expected..");
+          fail("'cannot perform operation VIEW_JOB_DETAILS' expected..");
         } catch (IOException ioe) {
-          assertTrue(ioe.getMessage().contains("AccessControlException"));
+          assertTrue(ioe.getMessage(), ioe.getMessage().contains("cannot perform operation VIEW_JOB_DETAILS"));
         }
 
         return null;
@@ -357,18 +357,18 @@ public class TestJobACLs {
         // Tests authorization failure with killJob
         try {
           myJob.killJob();
-          fail("AccessControlException expected..");
+          fail("'cannot perform operation KILL_JOB' expected..");
         } catch (IOException ioe) {
-          assertTrue(ioe.getMessage().contains("AccessControlException"));
+          assertTrue(ioe.getMessage(), ioe.getMessage().contains("cannot perform operation KILL_JOB"));
         }
 
 
         // Tests authorization failure with setJobPriority
         try {
           myJob.setJobPriority(JobPriority.HIGH.toString());
-          fail("AccessControlException expected..");
+          fail("'cannot perform operation SET_JOB_PRIORITY' expected..");
         } catch (IOException ioe) {
-          assertTrue(ioe.getMessage().contains("AccessControlException"));
+          assertTrue(ioe.getMessage(), ioe.getMessage().contains("cannot perform operation SET_JOB_PRIORITY"));
         }
 
         return null;
@@ -430,9 +430,9 @@ public class TestJobACLs {
         // Tests authorization failure with getCounters
         try {
           myJob.getCounters();
-          fail("AccessControlException expected..");
+          fail("'cannot perform operation VIEW_JOB_COUNTERS' expected..");
         } catch (IOException ioe) {
-          assertTrue(ioe.getMessage().contains("AccessControlException"));
+          assertTrue(ioe.getMessage(), ioe.getMessage().contains("cannot perform operation VIEW_JOB_COUNTERS"));
         }
 
         return null;
