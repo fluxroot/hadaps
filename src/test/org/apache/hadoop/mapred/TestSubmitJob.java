@@ -198,7 +198,8 @@ public class TestSubmitJob extends TestCase {
   public void testSecureJobExecution() throws Exception {
     LOG.info("Testing secure job submission/execution");
     MiniMRCluster mr = null;
-    Configuration conf = new Configuration();
+    JobConf conf = new JobConf();
+    conf.set("mapreduce.jobtracker.staging.root.dir", "/tmp/staging");
     final MiniDFSCluster dfs = new MiniDFSCluster(conf, 1, true, null);
     try {
       FileSystem fs =
@@ -215,7 +216,7 @@ public class TestSubmitJob extends TestCase {
               "/tmp/hadoop/mapred/staging"));
       UserGroupInformation MR_UGI = UserGroupInformation.getLoginUser();
       mr = new MiniMRCluster(0, 0, 1, dfs.getFileSystem().getUri().toString(),
-          1, null, null, MR_UGI);
+          1, null, null, MR_UGI, conf);
       JobTracker jt = mr.getJobTrackerRunner().getJobTracker();
       String jobTrackerName = "localhost:" + mr.getJobTrackerPort();
       // cleanup
