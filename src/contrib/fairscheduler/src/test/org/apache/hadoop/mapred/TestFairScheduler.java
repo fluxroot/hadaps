@@ -42,6 +42,7 @@ import org.apache.hadoop.net.Node;
 import org.apache.hadoop.mapred.FairScheduler.JobInfo;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.server.jobtracker.TaskTracker;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapred.UtilsForTests.FakeClock;
@@ -377,7 +378,7 @@ public class TestFairScheduler extends TestCase {
       return new ClusterStatus(numTrackers, maps, reduces,
           numTrackers * maxMapTasksPerTracker,
           numTrackers * maxReduceTasksPerTracker,
-          JobTrackerStatus.RUNNING);
+          Cluster.JobTrackerStatus.RUNNING);
     }
 
     @Override

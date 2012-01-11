@@ -77,7 +77,7 @@ public class TestStreamingFailure extends TestStreaming
     } finally {
       try {
         FileUtil.fullyDelete(OUTPUT_DIR.getAbsoluteFile());
-      } catch (IOException e) {
+      } catch (Exception e) {
         e.printStackTrace();
       }
     }

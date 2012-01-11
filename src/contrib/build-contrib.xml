@@ -88,6 +88,7 @@
   <property name="build.ivy.report.dir" location="${build.ivy.dir}/report" />
   <property name="common.ivy.lib.dir" location="${build.ivy.lib.dir}/${ant.project.name}/common"/> 
   <property name="hadoop.ivy.lib.dir" location="${build.ivy.lib.dir}/Hadoop/common"/>
+  <property name="hadoop-test.ivy.lib.dir" location="${build.ivy.lib.dir}/Hadoop/test/"/>
 
   <!--this is the naming policy for artifacts we want pulled down-->
   <property name="ivy.artifact.retrieve.pattern"
@@ -120,6 +121,10 @@
     <path refid="${ant.project.name}.test-classpath"/>
     <pathelement location="${hadoop.root}/build/examples"/>
     <path refid="contrib-classpath"/>
+
+    <fileset dir="${hadoop-test.ivy.lib.dir}">
+      <include name="*.jar" />
+    </fileset>
   </path>
 
   <!-- The system test classpath -->
