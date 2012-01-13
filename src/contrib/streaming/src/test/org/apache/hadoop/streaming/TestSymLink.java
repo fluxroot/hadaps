@@ -92,7 +92,7 @@ public class TestSymLink extends TestCase
             "-Dbuild.test=" + System.getProperty("build.test") + " " +
             conf.get(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS, 
                      conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, "")),
-        "-cacheFile", "hdfs://"+fileSys.getName()+CACHE_FILE + "#testlink"
+        "-cacheFile", fileSys.getUri()+CACHE_FILE + "#testlink"
       };
 
       fileSys.delete(new Path(OUTPUT_DIR), true);

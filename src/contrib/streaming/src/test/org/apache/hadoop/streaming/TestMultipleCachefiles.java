@@ -95,8 +95,8 @@ public class TestMultipleCachefiles extends TestCase
             "-Dbuild.test=" + System.getProperty("build.test") + " " +
             conf.get(JobConf.MAPRED_REDUCE_TASK_JAVA_OPTS, 
                      conf.get(JobConf.MAPRED_TASK_JAVA_OPTS, "")),
-        "-cacheFile", "hdfs://"+fileSys.getName()+CACHE_FILE + "#" + mapString,
-        "-cacheFile", "hdfs://"+fileSys.getName()+CACHE_FILE_2 + "#" + mapString2
+        "-cacheFile", fileSys.getUri()+CACHE_FILE + "#" + mapString,
+        "-cacheFile", fileSys.getUri()+CACHE_FILE_2 + "#" + mapString2
       };
 
       fileSys.delete(new Path(OUTPUT_DIR));
