@@ -28,8 +28,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.http.TestHttpServer.DummyFilterInitializer;
 import org.apache.hadoop.mapred.JobHistory.Keys;
 import org.apache.hadoop.mapred.JobHistory.TaskAttempt;
@@ -677,10 +679,14 @@ public class TestWebUIAuthorization extends ClusterMapReduceTestCase {
     props.setProperty("dfs.permissions", "false");
     // let us have enough map slots so that there won't be waiting for slots
     props.setProperty("mapred.tasktracker.map.tasks.maximum", "6");
+    props.setProperty("mapreduce.jobtracker.staging.root.dir", "/user");
 
     props.setProperty(JSPUtil.PRIVATE_ACTIONS_KEY, "true");
     props.setProperty(JobConf.MR_ADMINS, mrAdminUser + " " + mrAdminGroup);
     startCluster(true, props);
+    FileSystem.mkdirs(getFileSystem(), new Path("/user"), new FsPermission((short) 0777));
+    getFileSystem().setPermission(new Path("/user"), new FsPermission((short) 0777));
+    
     MiniMRCluster cluster = getMRCluster();
     int infoPort = cluster.getJobTrackerRunner().getJobTrackerInfoPort();
 

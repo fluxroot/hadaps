@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.SleepJob;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
@@ -181,17 +182,6 @@ public class TestSubmitJob extends TestCase {
          conf, NetUtils.getSocketFactory(conf, JobSubmissionProtocol.class));
    }
  
-  static org.apache.hadoop.hdfs.protocol.ClientProtocol getDFSClient(
-        Configuration conf, UserGroupInformation ugi)
-    throws IOException {
-     return (org.apache.hadoop.hdfs.protocol.ClientProtocol)
-        RPC.getProxy(org.apache.hadoop.hdfs.protocol.ClientProtocol.class,
-           org.apache.hadoop.hdfs.protocol.ClientProtocol.versionID,
-           NameNode.getAddress(conf), ugi,
-           conf,
-           NetUtils.getSocketFactory(conf,
-               org.apache.hadoop.hdfs.protocol.ClientProtocol.class));
-  }
    /**
     * Submit a job and check if the files are accessible to other users.
     */
@@ -259,7 +249,7 @@ public class TestSubmitJob extends TestCase {
         TestMiniMRWithDFSWithDistinctUsers.createUGI("user2", false);
       JobConf conf_other = mr.createJobConf();
       org.apache.hadoop.hdfs.protocol.ClientProtocol client =
-        getDFSClient(conf_other, user2);
+        DFSUtil.createNamenode(NameNode.getAddress(conf), conf_other, user2);
 
       // try accessing mapred.system.dir/jobid/*
       try {

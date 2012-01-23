@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.ipc.ProtocolInfo;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.TestRPC.TestImpl;
@@ -107,6 +108,7 @@ public class TestAuditLogger extends TestCase {
    * A special extension of {@link TestImpl} RPC server with 
    * {@link TestImpl#ping()} testing the audit logs.
    */
+  @ProtocolInfo(protocolName = "org.apache.hadoop.ipc.TestRPC$TestProtocol")
   private class MyTestRPCServer extends TestImpl {
     @Override
     public void ping() {
