@@ -82,6 +82,17 @@ public class TaskID extends org.apache.hadoop.mapred.ID {
     this(new JobID(jtIdentifier, jobId), isMap, id);
   }
   
+  /**
+   * Constructs a TaskInProgressId object from given parts.
+   * @param jtIdentifier jobTracker identifier
+   * @param jobId job number 
+   * @param type the TaskType 
+   * @param id the tip number
+   */
+  public TaskID(String jtIdentifier, int jobId, TaskType type, int id) {
+    this(new JobID(jtIdentifier, jobId), type == TaskType.MAP, id);
+  }
+  
   public TaskID() { 
     jobId = new JobID();
   }

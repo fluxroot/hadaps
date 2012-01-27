@@ -72,6 +72,19 @@ public class TaskAttemptID extends org.apache.hadoop.mapred.ID {
     this(new TaskID(jtIdentifier, jobId, isMap, taskId), id);
   }
   
+  /**
+   * Constructs a TaskId object from given parts.
+   * @param jtIdentifier jobTracker identifier
+   * @param jobId job number 
+   * @param type the TaskType 
+   * @param taskId taskId number
+   * @param id the task attempt number
+   */
+  public TaskAttemptID(String jtIdentifier, int jobId, TaskType type, 
+                       int taskId, int id) {
+    this(new TaskID(jtIdentifier, jobId, type, taskId), id);
+  }
+  
   public TaskAttemptID() { 
     taskId = new TaskID();
   }
