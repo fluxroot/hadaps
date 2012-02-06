@@ -23,13 +23,13 @@
   <parent>
     <groupId>com.cloudera.cdh</groupId>
     <artifactId>hadoop-root</artifactId>
-    <version>0.23.0-mr1-cdh4b1-SNAPSHOT</version>
+    <version>0.23.0-mr1-cdh4b2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-core</artifactId>
-  <version>0.23.0-mr1-cdh4b1-SNAPSHOT</version>
+  <version>0.23.0-mr1-cdh4b2-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <name>hadoop-core</name>
