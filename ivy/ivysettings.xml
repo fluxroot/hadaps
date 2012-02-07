@@ -35,8 +35,8 @@
   <property name="snapshot.apache.org"
     value="http://people.apache.org/repo/m2-snapshot-repository/"
     override="false"/>
-  <property name="maven2.pattern"
-    value="[organisation]/[module]/[revision]/[module]-[revision]"/>
+  <property name="maven2.pattern"  value="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier])"/>
+
   <property name="maven2.pattern.ext"
     value="${maven2.pattern}.[ext]"/>
   <property name="cdh.releases"
