@@ -88,6 +88,8 @@
         <module>hadoop-examples</module>
         <module>hadoop-test</module>
         <!-- module>hadoop-tools</module -->
+        <module>hadoop-client</module>
+        <module>hadoop-minicluster</module>
       </modules>
     </profile>
     <profile>
@@ -108,6 +110,8 @@
         <module>hadoop-test</module>
         <!-- module>hadoop-tools</module -->
         <module>hadoop-tarball</module>
+        <module>hadoop-client</module>
+        <module>hadoop-minicluster</module>
       </modules>
     </profile>
   </profiles>
