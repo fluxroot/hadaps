@@ -1242,4 +1242,50 @@ public class TestJobHistory extends TestCase {
     assertEquals("user", parts[3]);
     assertEquals("my_job", parts[4]);
   }
+
+  // run two jobs and check history has been deleted
+  public void testJobHistoryCleaner() throws Exception {
+    MiniMRCluster mr = null;
+    try {
+      JobConf conf = new JobConf();
+      // expire history rapidly
+      conf.setInt("mapreduce.jobhistory.cleaner.interval-ms", 0);
+      conf.setInt("mapreduce.jobhistory.max-age-ms", 100);
+      mr = new MiniMRCluster(2, "file:///", 3, null, null, conf);
+
+      // run the TCs
+      conf = mr.createJobConf();
+
+      FileSystem fs = FileSystem.get(conf);
+      // clean up
+      fs.delete(new Path(TEST_ROOT_DIR + "/succeed"), true);
+
+      Path inDir = new Path(TEST_ROOT_DIR + "/succeed/input1");
+      Path outDir = new Path(TEST_ROOT_DIR + "/succeed/output1");
+      conf.set("user.name", UserGroupInformation.getCurrentUser().getUserName());
+      
+      RunningJob job1 = UtilsForTests.runJobSucceed(conf, inDir, outDir);
+      validateJobHistoryUserLogLocation(job1.getID(), conf);
+      long historyCleanerRanAt1 = JobHistory.HistoryCleaner.getLastRan();
+      assertTrue(historyCleanerRanAt1 != 0);
+      
+      // wait for the history max age to pass
+      Thread.sleep(200);
+      
+      RunningJob job2 = UtilsForTests.runJobSucceed(conf, inDir, outDir);
+      validateJobHistoryUserLogLocation(job2.getID(), conf);
+      long historyCleanerRanAt2 = JobHistory.HistoryCleaner.getLastRan();
+      assertTrue(historyCleanerRanAt2 > historyCleanerRanAt1);
+
+      Path doneDir = JobHistory.getCompletedJobHistoryLocation();
+      String logFileName = getDoneFile(conf, job1.getID(), doneDir);
+      assertNull("Log file should no longer exist for " + job1.getID(), logFileName);
+      
+    } finally {
+      if (mr != null) {
+        cleanupLocalFiles(mr);
+        mr.shutdown();
+      }
+    }
+  }
 }

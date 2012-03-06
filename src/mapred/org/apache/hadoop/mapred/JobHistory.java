@@ -373,6 +373,19 @@ public class JobHistory {
       }
     }
     fileManager.start();
+    
+    HistoryCleaner.cleanupFrequency =
+      conf.getLong("mapreduce.jobhistory.cleaner.interval-ms",
+          HistoryCleaner.DEFAULT_CLEANUP_FREQUENCY);
+    HistoryCleaner.maxAgeOfHistoryFiles =
+      conf.getLong("mapreduce.jobhistory.max-age-ms",
+          HistoryCleaner.DEFAULT_HISTORY_MAX_AGE);
+    LOG.info(String.format("Job History MaxAge is %d ms (%.2f days), " +
+          "Cleanup Frequency is %d ms (%.2f days)",
+          HistoryCleaner.maxAgeOfHistoryFiles,
+          ((float) HistoryCleaner.maxAgeOfHistoryFiles)/(HistoryCleaner.ONE_DAY_IN_MS),
+          HistoryCleaner.cleanupFrequency,
+          ((float) HistoryCleaner.cleanupFrequency)/HistoryCleaner.ONE_DAY_IN_MS));
   }
 
 
@@ -1458,6 +1471,7 @@ public class JobHistory {
         }
       }
       Thread historyCleaner  = new Thread(new HistoryCleaner());
+      historyCleaner.setName("Thread for cleaning up History files");
       historyCleaner.start(); 
     }
     /**
@@ -2064,14 +2078,18 @@ public class JobHistory {
   }
   
   /**
-   * Delete history files older than one month. Update master index and remove all 
+   * Delete history files older than one month (or a configurable age).
+   * Update master index and remove all 
    * jobs older than one month. Also if a job tracker has no jobs in last one month
    * remove reference to the job tracker. 
    *
    */
   public static class HistoryCleaner implements Runnable{
     static final long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000L;
-    static final long THIRTY_DAYS_IN_MS = 30 * ONE_DAY_IN_MS;
+    static final long DEFAULT_CLEANUP_FREQUENCY = ONE_DAY_IN_MS;
+    static final long DEFAULT_HISTORY_MAX_AGE = 30 * ONE_DAY_IN_MS;
+    static long cleanupFrequency = DEFAULT_CLEANUP_FREQUENCY;
+    static long maxAgeOfHistoryFiles = DEFAULT_HISTORY_MAX_AGE;
     private long now; 
     private static boolean isRunning = false; 
     private static long lastRan = 0; 
@@ -2084,20 +2102,19 @@ public class JobHistory {
         return; 
       }
       now = System.currentTimeMillis();
-      // clean history only once a day at max
-      if (lastRan != 0 && (now - lastRan) < ONE_DAY_IN_MS) {
+      if (lastRan != 0 && (now - lastRan) < cleanupFrequency) {
         return; 
       }
       lastRan = now;  
       isRunning = true; 
       try {
         FileStatus[] historyFiles = DONEDIR_FS.listStatus(DONE);
-
-        // delete if older than 30 days
-        for (FileStatus f : historyFiles) {
-          if (now - f.getModificationTime() > THIRTY_DAYS_IN_MS) {
-            DONEDIR_FS.delete(f.getPath(), true); 
-            LOG.info("Deleting old history file : " + f.getPath());
+        if (historyFiles != null) {
+          for (FileStatus f : historyFiles) {
+            if (now - f.getModificationTime() > maxAgeOfHistoryFiles) {
+              DONEDIR_FS.delete(f.getPath(), true); 
+              LOG.info("Deleting old history file : " + f.getPath());
+            }
           }
         }
 
@@ -2107,7 +2124,7 @@ public class JobHistory {
             jobHistoryFileMap.entrySet().iterator();
           while (it.hasNext()) {
             MovedFileInfo info = it.next().getValue();
-            if (now - info.timestamp > THIRTY_DAYS_IN_MS) {
+            if (now - info.timestamp > maxAgeOfHistoryFiles) {
               it.remove();
             } else {
               //since entries are in sorted timestamp order, no more entries
