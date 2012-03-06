@@ -1232,4 +1232,14 @@ public class TestJobHistory extends TestCase {
       }
     }
   }
+  
+  public void testGetJobDetailsFromHistoryFilePath() throws IOException {
+    String[] parts = JobHistory.JobInfo.getJobHistoryFileNameParts(
+        "hostname_1331056103153_job_201203060948_0007_user_my_job");
+    assertEquals("hostname", parts[0]);
+    assertEquals("1331056103153", parts[1]);
+    assertEquals("job_201203060948_0007", parts[2]);
+    assertEquals("user", parts[3]);
+    assertEquals("my_job", parts[4]);
+  }
 }

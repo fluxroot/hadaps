@@ -224,15 +224,13 @@ window.location.href = url;
     for (int i = start - 1; i < start + length - 1; ++i) {
       Path jobFile = jobFiles[i];
       
-      String decodedJobFileName = 
-          JobHistory.JobInfo.decodeJobHistoryFileName(jobFile.getName());
-
-      String[] jobDetails = decodedJobFileName.split("_");
+      String[] jobDetails = 
+          JobHistory.JobInfo.getJobHistoryFileNameParts(jobFile.getName());
       String trackerHostName = jobDetails[0];
       String trackerStartTime = jobDetails[1];
-      String jobId = jobDetails[2] + "_" +jobDetails[3] + "_" + jobDetails[4] ;
-      String userName = jobDetails[5];
-      String jobName = jobDetails[6];
+      String jobId = jobDetails[2];
+      String userName = jobDetails[3];
+      String jobName = jobDetails[4];
       
       // Check if the job is already displayed. There can be multiple job 
       // history files for jobs that have restarted

@@ -813,6 +813,19 @@ public class JobHistory {
       return decodedFileName;
     }
     
+    public static String[] getJobHistoryFileNameParts(String logFileName)
+    throws IOException {
+      String decodedJobFileName = decodeJobHistoryFileName(logFileName);
+      String[] jobDetails = decodedJobFileName.split("_", 7);
+      return new String[] {
+          jobDetails[0],
+          jobDetails[1],
+          jobDetails[2] + "_" +jobDetails[3] + "_" + jobDetails[4],
+          jobDetails[5],
+          jobDetails[6]
+      };
+    }
+    
     /**
      * Get the job name from the job conf
      */
