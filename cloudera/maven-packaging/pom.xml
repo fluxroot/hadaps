@@ -27,7 +27,7 @@
   
   <groupId>com.cloudera.cdh</groupId>
   <artifactId>hadoop-root</artifactId>
-  <version>0.23.0-mr1-cdh4b2-SNAPSHOT</version>
+  <version>0.23.1-mr1-cdh4b2-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <description>Hadoop root</description>
