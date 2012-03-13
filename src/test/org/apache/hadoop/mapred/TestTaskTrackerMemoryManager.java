@@ -33,6 +33,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.examples.SleepJob;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.util.LinuxResourceCalculatorPlugin;
 import org.apache.hadoop.util.MemoryCalculatorPlugin;
 import org.apache.hadoop.util.ProcfsBasedProcessTree;
 import org.apache.hadoop.util.StringUtils;
@@ -55,7 +57,7 @@ public class TestTaskTrackerMemoryManager extends TestCase {
   private MiniMRCluster miniMRCluster;
 
   private String taskOverLimitPatternString =
-      "TaskTree \\[pid=[0-9]*,tipID=.*\\] is running beyond memory-limits. "
+      "TaskTree \\[pid=[0-9]*,tipID=.*\\] is running beyond.*memory-limits. "
           + "Current usage : [0-9]*bytes. Limit : %sbytes. Killing task.";
 
   private void startCluster(JobConf conf)
@@ -179,11 +181,16 @@ public class TestTaskTrackerMemoryManager extends TestCase {
     fConf.setLong(
         JobTracker.MAPRED_CLUSTER_REDUCE_MEMORY_MB_PROPERTY,
         2 * 1024L);
+    // Reserve only 1 mb of the memory on TaskTrackers
+    fConf.setLong(TaskTracker.TT_RESERVED_PHYSICALMEMORY_MB, 1L);
     startCluster(new JobConf());
 
     JobConf conf = new JobConf(miniMRCluster.createJobConf());
     conf.setMemoryForMapTask(PER_TASK_LIMIT);
     conf.setMemoryForReduceTask(PER_TASK_LIMIT);
+    // Set task physical memory limits
+    conf.setLong(JobContext.MAP_MEMORY_PHYSICAL_MB, PER_TASK_LIMIT);
+    conf.setLong(JobContext.REDUCE_MEMORY_PHYSICAL_MB, PER_TASK_LIMIT);
     runAndCheckSuccessfulJob(conf);
   }
 
@@ -211,7 +218,31 @@ public class TestTaskTrackerMemoryManager extends TestCase {
         JobTracker.MAPRED_CLUSTER_REDUCE_MEMORY_MB_PROPERTY,
         2 * 1024);
     startCluster(fConf);
-    runJobExceedingMemoryLimit();
+    runJobExceedingMemoryLimit(false);
+  }
+  
+  /**
+   * Test for verifying that tasks that go beyond physical limits get killed.
+   * 
+   * @throws Exception
+   */
+  public void testTasksBeyondPhysicalLimits()
+      throws Exception {
+
+    // Run the test only if memory management is enabled
+    if (!isProcfsBasedTreeAvailable()) {
+      return;
+    }
+
+    // Start cluster with proper configuration.
+    JobConf fConf = new JobConf();
+    // very small value, so that no task escapes to successful completion.
+    fConf.set(TaskTracker.TT_MEMORY_MANAGER_MONITORING_INTERVAL,
+        String.valueOf(300));
+    // Reserve only 1 mb of the memory on TaskTrackers
+    fConf.setLong(TaskTracker.TT_RESERVED_PHYSICALMEMORY_MB, 1L);
+    startCluster(fConf);
+    runJobExceedingMemoryLimit(true);
   }
   
   /**
@@ -241,15 +272,18 @@ public class TestTaskTrackerMemoryManager extends TestCase {
     fConf.setLong(JobConf.UPPER_LIMIT_ON_TASK_VMEM_PROPERTY, 
         (3L * 1024L * 1024L * 1024L));
     startCluster(fConf);
-    runJobExceedingMemoryLimit();
+    runJobExceedingMemoryLimit(false);
   }
 
   /**
    * Runs a job which should fail the when run by the memory monitor.
    * 
+   * @param doPhysicalMemory If it is true, use physical memory limit.
+   *                         Otherwise use virtual memory limit.
    * @throws IOException
    */
-  private void runJobExceedingMemoryLimit() throws IOException {
+  private void runJobExceedingMemoryLimit(boolean doPhysicalMemory)
+    throws IOException {
     long PER_TASK_LIMIT = 1L; // Low enough to kill off sleepJob tasks.
 
     Pattern taskOverLimitPattern =
@@ -259,8 +293,13 @@ public class TestTaskTrackerMemoryManager extends TestCase {
 
     // Set up job.
     JobConf conf = new JobConf(miniMRCluster.createJobConf());
-    conf.setMemoryForMapTask(PER_TASK_LIMIT);
-    conf.setMemoryForReduceTask(PER_TASK_LIMIT);
+    if (doPhysicalMemory) {
+      conf.setLong(JobContext.MAP_MEMORY_PHYSICAL_MB, PER_TASK_LIMIT);
+      conf.setLong(JobContext.REDUCE_MEMORY_PHYSICAL_MB, PER_TASK_LIMIT);
+    } else {
+      conf.setMemoryForMapTask(PER_TASK_LIMIT);
+      conf.setMemoryForReduceTask(PER_TASK_LIMIT);
+    }
     conf.setMaxMapAttempts(1);
     conf.setMaxReduceAttempts(1);
 
@@ -483,5 +522,88 @@ public class TestTaskTrackerMemoryManager extends TestCase {
     } finally {
       FileUtil.fullyDelete(procfsRootDir);
     }
+  }
+
+  /**
+   * Test for verifying that tasks causing cumulative usage of physical memory
+   * to go beyond TT's limit get killed.
+   *
+   * @throws Exception
+   */
+  public void testTasksCumulativelyExceedingTTPhysicalLimits()
+      throws Exception {
+
+    // Run the test only if memory management is enabled
+    if (!isProcfsBasedTreeAvailable()) {
+      return;
+    }
+
+    // Start cluster with proper configuration.
+    JobConf fConf = new JobConf();
+
+    // very small value, so that no task escapes to successful completion.
+    fConf.set("mapred.tasktracker.taskmemorymanager.monitoring-interval",
+        String.valueOf(300));
+    
+    // reserve almost all memory on TT so that the job will exceed memory limits
+    LinuxResourceCalculatorPlugin memoryCalculatorPlugin =
+            new LinuxResourceCalculatorPlugin();
+    long totalPhysicalMemory = memoryCalculatorPlugin.getPhysicalMemorySize();
+    long reservedPhysicalMemory = (totalPhysicalMemory - 1) / (1024 * 1024);
+    fConf.setLong(TaskTracker.TT_RESERVED_PHYSICALMEMORY_MB,
+                  reservedPhysicalMemory);
+    long maxRssMemoryAllowedForAllTasks = totalPhysicalMemory -
+                                          reservedPhysicalMemory * 1024 * 1024L;
+    Pattern physicalMemoryOverLimitPattern = Pattern.compile(
+        "Killing one of the memory-consuming tasks - .*"
+          + ", as the cumulative RSS memory usage of all the tasks on "
+          + "the TaskTracker exceeds physical memory limit "
+          + maxRssMemoryAllowedForAllTasks + ".");
+
+    startCluster(fConf);
+    Matcher mat = null;
+
+    // Set up job.
+    JobConf conf = new JobConf(miniMRCluster.createJobConf());
+    // Set per task physical memory limits to be a higher value
+    conf.setLong(JobContext.MAP_MEMORY_PHYSICAL_MB, 2 * 1024L);
+    conf.setLong(JobContext.REDUCE_MEMORY_PHYSICAL_MB, 2 * 1024L);
+    JobClient jClient = new JobClient(conf);
+    SleepJob sleepJob = new SleepJob();
+    sleepJob.setConf(conf);
+    // Start the job
+    JobConf job = sleepJob.setupJobConf(1, 1, 100000, 1, 100000, 1);
+    RunningJob runningJob = jClient.submitJob(job);
+    boolean TTOverFlowMsgPresent = false;
+    while (true) {
+      List<TaskReport> allTaskReports = new ArrayList<TaskReport>();
+      allTaskReports.addAll(Arrays.asList(jClient
+          .getSetupTaskReports((org.apache.hadoop.mapred.JobID) runningJob.getID())));
+      allTaskReports.addAll(Arrays.asList(jClient
+          .getMapTaskReports((org.apache.hadoop.mapred.JobID) runningJob.getID())));
+      for (TaskReport tr : allTaskReports) {
+        String[] diag = tr.getDiagnostics();
+        for (String str : diag) {
+          mat = physicalMemoryOverLimitPattern.matcher(str);
+          if (mat.find()) {
+            TTOverFlowMsgPresent = true;
+          }
+        }
+      }
+      if (TTOverFlowMsgPresent) {
+        break;
+      }
+      assertFalse("Job should not finish successfully", runningJob.isSuccessful());
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        // nothing
+      }
+    }
+    // If it comes here without a test-timeout, it means there was a task that
+    // was killed because of crossing cumulative TT limit.
+
+    // Test succeeded, kill the job.
+    runningJob.killJob();
   }
 }

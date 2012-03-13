@@ -87,6 +87,8 @@ public class ProcfsBasedProcessTree extends ProcessTree {
   
   private Integer pid = -1;
   private Long cpuTime = 0L;
+  private boolean setsidUsed = false;
+  private long sleeptimeBeforeSigkill = DEFAULT_SLEEPTIME_BEFORE_SIGKILL;
 
   private Map<Integer, ProcessInfo> processTree = new HashMap<Integer, ProcessInfo>();
 
@@ -95,12 +97,48 @@ public class ProcfsBasedProcessTree extends ProcessTree {
   }
   
   public ProcfsBasedProcessTree(String pid, boolean setsidUsed) {
-    this(pid,PROCFS);
+    this(pid, setsidUsed, DEFAULT_SLEEPTIME_BEFORE_SIGKILL);
   }
 
   public ProcfsBasedProcessTree(String pid, String procfsDir) {
+    this(pid, false, DEFAULT_SLEEPTIME_BEFORE_SIGKILL, procfsDir);
+  }
+  
+  public ProcfsBasedProcessTree(String pid, boolean setsidUsed,
+                                long sigkillInterval) {
+    this(pid, setsidUsed, sigkillInterval, PROCFS);
+  }
+
+  /**
+   * Build a new process tree rooted at the pid.
+   * 
+   * This method is provided mainly for testing purposes, where
+   * the root of the proc file system can be adjusted.
+   * 
+   * @param pid root of the process tree
+   * @param setsidUsed true, if setsid was used for the root pid
+   * @param sigkillInterval how long to wait between a SIGTERM and SIGKILL 
+   *                        when killing a process tree
+   * @param procfsDir the root of a proc file system - only used for testing. 
+   */
+  public ProcfsBasedProcessTree(String pid, boolean setsidUsed,
+                                long sigkillInterval, String procfsDir) {
     this.pid = getValidPID(pid);
+    this.setsidUsed = setsidUsed;
+    sleeptimeBeforeSigkill = sigkillInterval;
     this.procfsDir = procfsDir;
+  }
+  
+  /**
+   * Sets SIGKILL interval
+   * @deprecated Use {@link ProcfsBasedProcessTree#ProcfsBasedProcessTree(
+   *                  String, boolean, long)} instead
+   * @param interval The time to wait before sending SIGKILL
+   *                 after sending SIGTERM
+   */
+  @Deprecated
+  public void setSigKillInterval(long interval) {
+    sleeptimeBeforeSigkill = interval;
   }
   
   /**
@@ -226,6 +264,88 @@ public class ProcfsBasedProcessTree extends ProcessTree {
       }
     }
     return false;
+  }
+  
+  /** Verify that the given process id is same as its process group id.
+   * @param pidStr Process id of the to-be-verified-process
+   * @param procfsDir  Procfs root dir
+   */
+  static boolean checkPidPgrpidForMatch(String pidStr, String procfsDir) {
+    Integer pId = Integer.parseInt(pidStr);
+    // Get information for this process
+    ProcessInfo pInfo = new ProcessInfo(pId);
+    pInfo = constructProcessInfo(pInfo, procfsDir);
+    if (pInfo == null) {
+      // process group leader may have finished execution, but we still need to
+      // kill the subProcesses in the process group.
+      return true;
+    }
+
+    //make sure that pId and its pgrpId match
+    if (!pInfo.getPgrpId().equals(pId)) {
+      LOG.warn("Unexpected: Process with PID " + pId +
+               " is not a process group leader.");
+      return false;
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(pId + " is a process group leader, as expected.");
+    }
+    return true;
+  }
+  
+  /** Make sure that the given pid is a process group leader and then
+   * destroy the process group.
+   * @param pgrpId   Process group id of to-be-killed-processes
+   * @param interval The time to wait before sending SIGKILL
+   *                 after sending SIGTERM
+   * @param inBackground Process is to be killed in the back ground with
+   *                     a separate thread
+   */
+  public static void assertAndDestroyProcessGroup(String pgrpId, long interval,
+                       boolean inBackground)
+         throws IOException {
+    // Make sure that the pid given is a process group leader
+    if (!checkPidPgrpidForMatch(pgrpId, PROCFS)) {
+      throw new IOException("Process with PID " + pgrpId  +
+                          " is not a process group leader.");
+    }
+    destroyProcessGroup(pgrpId, interval, inBackground);
+  }
+
+  /**
+   * Destroy the process-tree.
+   */
+  public void destroy() {
+    destroy(true);
+  }
+  
+  /**
+   * Destroy the process-tree.
+   * @param inBackground Process is to be killed in the back ground with
+   *                     a separate thread
+   */
+  public void destroy(boolean inBackground) {
+    LOG.debug("Killing ProcfsBasedProcessTree of " + pid);
+    if (pid == -1) {
+      return;
+    }
+    if (isAlive(pid.toString())) {
+      if (isSetsidAvailable && setsidUsed) {
+        // In this case, we know that pid got created using setsid. So kill the
+        // whole processGroup.
+        try {
+          assertAndDestroyProcessGroup(pid.toString(), sleeptimeBeforeSigkill,
+                              inBackground);
+        } catch (IOException e) {
+          LOG.warn(StringUtils.stringifyException(e));
+        }
+      }
+      else {
+        //TODO: Destroy all the processes in the subtree in this case also.
+        // For the time being, killing only the root process.
+        destroyProcess(pid.toString(), sleeptimeBeforeSigkill, inBackground);
+      }
+    }
   }
 
   private static final String PROCESSTREE_DUMP_FORMAT =

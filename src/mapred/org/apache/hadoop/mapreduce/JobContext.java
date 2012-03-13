@@ -63,6 +63,11 @@ public interface JobContext {
     "mapred.userlog.retain.hours";
   public static final String MAPREDUCE_TASK_CLASSPATH_PRECEDENCE = 
     "mapreduce.task.classpath.user.precedence";
+  
+  public static final String MAP_MEMORY_PHYSICAL_MB =
+    "mapreduce.map.memory.physical.mb";
+  public static final String REDUCE_MEMORY_PHYSICAL_MB = 
+     "mapreduce.reduce.memory.physical.mb";
 
   /**
    * Return the configuration for the job.

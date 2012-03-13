@@ -134,6 +134,12 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   @Deprecated
   static final String MAPRED_TASKTRACKER_PMEM_RESERVED_PROPERTY =
      "mapred.tasktracker.pmem.reserved";
+  
+  static final String TT_RESERVED_PHYSICALMEMORY_MB =
+    "mapreduce.tasktracker.reserved.physicalmemory.mb";
+  
+  static final String TT_MEMORY_MANAGER_MONITORING_INTERVAL = 
+    "mapreduce.tasktracker.taskmemorymanager.monitoringinterval";
 
   static final String CONF_VERSION_KEY = "mapreduce.tasktracker.conf.version";
   static final String CONF_VERSION_DEFAULT = "default";
@@ -385,6 +391,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   private long mapSlotMemorySizeOnTT = JobConf.DISABLED_MEMORY_LIMIT;
   private long reduceSlotSizeMemoryOnTT = JobConf.DISABLED_MEMORY_LIMIT;
   private long totalMemoryAllottedForTasks = JobConf.DISABLED_MEMORY_LIMIT;
+  private long reservedPhysicalMemoryOnTT = JobConf.DISABLED_MEMORY_LIMIT;
   private ResourceCalculatorPlugin resourceCalculatorPlugin = null;
 
   private UserLogManager userLogManager;
@@ -2121,6 +2128,15 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   }
   
   /**
+   * @return The amount of physical memory that will not be used for running
+   *         tasks in bytes. Returns JobConf.DISABLED_MEMORY_LIMIT if it is not
+   *         configured.
+   */
+  long getReservedPhysicalMemoryOnTT() {
+    return reservedPhysicalMemoryOnTT;
+  }
+
+  /**
    * Check if the jobtracker directed a 'reset' of the tasktracker.
    * 
    * @param actions the directives of the jobtracker for the tasktracker.
@@ -2579,12 +2595,25 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   
   void addToMemoryManager(TaskAttemptID attemptId, boolean isMap,
                           JobConf conf) {
-    if (isTaskMemoryManagerEnabled()) {
-      taskMemoryManager.addTask(attemptId, 
-          isMap ? conf
-              .getMemoryForMapTask() * 1024 * 1024L : conf
-              .getMemoryForReduceTask() * 1024 * 1024L);
+    if (!isTaskMemoryManagerEnabled()) {
+      return; // Skip this if TaskMemoryManager is not enabled.
     }
+    // Obtain physical memory limits from the job configuration
+    long physicalMemoryLimit =
+      conf.getLong(isMap ? JobContext.MAP_MEMORY_PHYSICAL_MB :
+                   JobContext.REDUCE_MEMORY_PHYSICAL_MB,
+                   JobConf.DISABLED_MEMORY_LIMIT);
+    if (physicalMemoryLimit > 0) {
+      physicalMemoryLimit *= 1024L * 1024L;
+    }
+
+    // Obtain virtual memory limits from the job configuration
+    long virtualMemoryLimit = isMap ?
+      conf.getMemoryForMapTask() * 1024 * 1024 :
+      conf.getMemoryForReduceTask() * 1024 * 1024;
+
+    taskMemoryManager.addTask(attemptId, virtualMemoryLimit,
+                              physicalMemoryLimit);
   }
 
   void removeFromMemoryManager(TaskAttemptID attemptId) {
@@ -4216,6 +4245,10 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   public TaskMemoryManagerThread getTaskMemoryManager() {
     return taskMemoryManager;
   }
+  
+  synchronized TaskInProgress getRunningTask(TaskAttemptID tid) {
+    return runningTasks.get(tid);
+  }
 
   /**
    * Normalize the negative values in configuration
@@ -4333,6 +4366,14 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
           + " Thrashing might happen.");
     }
 
+    reservedPhysicalMemoryOnTT =
+      fConf.getLong(TT_RESERVED_PHYSICALMEMORY_MB,
+                    JobConf.DISABLED_MEMORY_LIMIT);
+    reservedPhysicalMemoryOnTT =
+      reservedPhysicalMemoryOnTT == JobConf.DISABLED_MEMORY_LIMIT ?
+      JobConf.DISABLED_MEMORY_LIMIT :
+      reservedPhysicalMemoryOnTT * 1024 * 1024; // normalize to bytes
+
     // start the taskMemoryManager thread only if enabled
     setTaskMemoryManagerEnabledFlag();
     if (isTaskMemoryManagerEnabled()) {
@@ -4350,10 +4391,12 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
       return;
     }
 
-    if (totalMemoryAllottedForTasks == JobConf.DISABLED_MEMORY_LIMIT) {
+    if (reservedPhysicalMemoryOnTT == JobConf.DISABLED_MEMORY_LIMIT
+        && totalMemoryAllottedForTasks == JobConf.DISABLED_MEMORY_LIMIT) {
       taskMemoryManagerEnabled = false;
-      LOG.warn("TaskTracker's totalMemoryAllottedForTasks is -1."
-          + " TaskMemoryManager is disabled.");
+      LOG.warn("TaskTracker's totalMemoryAllottedForTasks is -1 and " +
+               "reserved physical memory is not configured. " +
+               "TaskMemoryManager is disabled.");
       return;
     }
 
