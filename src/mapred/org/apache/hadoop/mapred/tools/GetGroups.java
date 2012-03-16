@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobTracker;
-import org.apache.hadoop.tools.GetGroupsBase;
+import org.apache.hadoop.mr1tools.GetGroupsBase;
 import org.apache.hadoop.util.ToolRunner;
 
 /**

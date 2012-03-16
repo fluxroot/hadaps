@@ -29,7 +29,7 @@ import org.apache.hadoop.mapred.AdminOperationsProtocol;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.JobTracker;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.RefreshUserMappingsProtocol;
+import org.apache.hadoop.mr1security.RefreshUserMappingsProtocol;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.RefreshAuthorizationPolicyProtocol;
 import org.apache.hadoop.util.Tool;

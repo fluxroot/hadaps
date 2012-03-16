@@ -17,11 +17,11 @@
  */
 package org.apache.hadoop.mapred;
 
-import org.apache.hadoop.security.RefreshUserMappingsProtocol;
+import org.apache.hadoop.mr1security.RefreshUserMappingsProtocol;
 import org.apache.hadoop.security.authorize.PolicyProvider;
 import org.apache.hadoop.security.authorize.RefreshAuthorizationPolicyProtocol;
 import org.apache.hadoop.security.authorize.Service;
-import org.apache.hadoop.tools.GetUserMappingsProtocol;
+import org.apache.hadoop.mr1tools.GetUserMappingsProtocol;
 
 /**
  * {@link PolicyProvider} for Map-Reduce protocols.
