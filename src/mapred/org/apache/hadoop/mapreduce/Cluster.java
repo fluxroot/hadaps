@@ -18,11 +18,58 @@
 
 package org.apache.hadoop.mapreduce;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Random;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
+
 /**
  * Provides a way to access information about the map/reduce cluster.
  */
 public class Cluster {
-  
+
   public static enum JobTrackerStatus {INITIALIZING, RUNNING};
+
+  private UserGroupInformation ugi;
+  private Configuration conf;
+  private Path stagingAreaDir = null;
+  final Random rand = new Random();
+
+  public Cluster(Configuration conf) throws IOException {
+    this(null, conf);
+  }
+
+  public Cluster(InetSocketAddress jobTrackAddr, Configuration conf)
+      throws IOException {
+    this.conf = conf;
+    this.ugi = UserGroupInformation.getCurrentUser();
+  }
+
+  /**
+   * Grab the jobtracker's view of the staging directory path where job-specific
+   * files will be placed.
+   *
+   * @return the staging directory where job-specific files are to be placed.
+   */
+  public Path getStagingAreaDir() throws IOException, InterruptedException {
+    if (stagingAreaDir == null) {
+      Path stagingRootDir = new Path(conf
+          .get("mapreduce.jobtracker.staging.root.dir",
+              "/tmp/hadoop/mapred/staging"));
+      UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+      String user;
+      if (ugi != null) {
+        user = ugi.getShortUserName() + rand.nextInt();
+      } else {
+        user = "dummy" + rand.nextInt();
+      }
+      return stagingRootDir.getFileSystem(conf).makeQualified(
+          new Path(stagingRootDir, user + "/.staging"));
+    }
+    return stagingAreaDir;
+  }
 
 }
