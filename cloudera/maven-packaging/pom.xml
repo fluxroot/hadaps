@@ -87,7 +87,7 @@
         <!-- module>hadoop-mrunit</module -->
         <module>hadoop-examples</module>
         <module>hadoop-test</module>
-        <!-- module>hadoop-tools</module -->
+        <module>hadoop-tools</module>
         <module>hadoop-client</module>
         <module>hadoop-minicluster</module>
       </modules>
@@ -108,7 +108,7 @@
         <module>hadoop-mrunit</module -->
         <module>hadoop-examples</module>
         <module>hadoop-test</module>
-        <!-- module>hadoop-tools</module -->
+        <module>hadoop-tools</module>
         <module>hadoop-tarball</module>
         <module>hadoop-client</module>
         <module>hadoop-minicluster</module>
