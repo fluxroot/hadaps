@@ -176,6 +176,11 @@ for f in $HADOOP_HOME/build/hadoop-tools-*.jar; do
   TOOL_PATH=${TOOL_PATH}:$f;
 done
 
+HADOOP_LIBEXEC_DIR=${HADOOP_LIBEXEC_DIR:-"$bin"/../libexec}
+if [ -e "${HADOOP_LIBEXEC_DIR}/hadoop-config.sh" ]; then
+  CLASSPATH="${CLASSPATH}:`. "${HADOOP_LIBEXEC_DIR}/hadoop-config.sh" ; echo $CLASSPATH`"
+fi
+
 # add user-specified CLASSPATH last
 if [ "$HADOOP_USER_CLASSPATH_FIRST" = "" ] && [ "$HADOOP_CLASSPATH" != "" ]; then
   CLASSPATH=${CLASSPATH}:${HADOOP_CLASSPATH}
