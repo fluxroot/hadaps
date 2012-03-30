@@ -1384,6 +1384,10 @@
     <copy todir="${dist.dir}/cloudera">
       <fileset dir="cloudera" />
     </copy>
+
+    <copy todir="${dist.dir}/c++" includeEmptyDirs="false">
+      <fileset dir="${build.dir}/c++-examples"/>
+    </copy>
     <!-- END CLOUDERA HOOKS -->
 
     <copy todir="${dist.dir}/.eclipse.templates">
