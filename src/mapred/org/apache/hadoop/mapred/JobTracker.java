@@ -3126,8 +3126,13 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
   ////////////////////////////////////////////////////
   // InterTrackerProtocol
   ////////////////////////////////////////////////////
-  
-  public String getBuildVersion() throws IOException{
+
+  // Just returns the VersionInfo version (unlike MXBean#getVersion)
+  public String getVIVersion() throws IOException {
+    return VersionInfo.getVersion();
+  }
+
+  public String getBuildVersion() throws IOException {
     return VersionInfo.getBuildVersion();
   }
 

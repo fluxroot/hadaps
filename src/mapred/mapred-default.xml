@@ -1223,4 +1223,18 @@
 
 <!--  end of node health script variables -->
 
+<property>
+  <name>hadoop.relaxed.worker.version.check</name>
+  <value>true</value>
+  <description>
+    This option changes the behavior of tasktrackers to only check for
+    a version match (eg "0.20.2-cdh4b2") but ignore the other build
+    fields (revision, user, and source checksum) when checking for
+    compatibility with jobtrackers. In previous releases tasktrackers
+    refused to connect to jobtrackers if their build version (version,
+    revision, user, and source checksum) did not match. This behavior
+    can be restored by disabling this option.
+  </description>
+</property>
+
 </configuration>

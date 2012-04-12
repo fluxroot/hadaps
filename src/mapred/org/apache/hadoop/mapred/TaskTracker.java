@@ -448,6 +448,11 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
    */
   private long diskHealthCheckInterval;
 
+  /**
+   * Whether the TT performs a full or relaxed version check with the JT.
+   */
+  private boolean relaxedVersionCheck;
+
   /*
    * A list of commitTaskActions for whom commit response has been received 
    */
@@ -1592,6 +1597,8 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
    */
   public TaskTracker(JobConf conf) throws IOException, InterruptedException {
     originalConf = conf;
+    relaxedVersionCheck = conf.getBoolean(
+        "hadoop.relaxed.worker.version.check", true);
     FILE_CACHE_SIZE = conf.getInt("mapred.tasktracker.file.cache.size", 2000);
     maxMapSlots = conf.getInt(
                   "mapred.tasktracker.map.tasks.maximum", 2);
@@ -1726,6 +1733,31 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   }
 
   /**
+   * @return true if this tasktracker is permitted to connect to
+   *    the given jobtracker version
+   */
+  boolean isPermittedVersion(String jtBuildVersion, String jtVersion) {
+    boolean buildVersionMatch =
+      jtBuildVersion.equals(VersionInfo.getBuildVersion());
+    boolean versionMatch = jtVersion.equals(VersionInfo.getVersion());
+    if (buildVersionMatch && !versionMatch) {
+      throw new AssertionError("Invalid build. The build versions match" +
+          " but the JT version is " + jtVersion +
+          " and the TT version is " + VersionInfo.getVersion());
+    }
+    if (relaxedVersionCheck) {
+      if (!buildVersionMatch && versionMatch) {
+        LOG.info("Permitting tasktracker revision " + VersionInfo.getRevision() +
+            " to connect to jobtracker " + jtBuildVersion + " because " +
+            " hadoop.relaxed.worker.version.check is enabled");
+      }
+      return versionMatch;
+    } else {
+      return buildVersionMatch;
+    }
+  }
+
+  /**
    * Main service loop.  Will stay in this loop forever.
    */
   State offerService() throws Exception {
@@ -1748,15 +1780,18 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
         }
 
         // If the TaskTracker is just starting up:
-        // 1. Verify the buildVersion
+        // 1. Verify the versions matches with the JobTracker
         // 2. Get the system directory & filesystem
         if(justInited) {
-          String jobTrackerBV = jobClient.getBuildVersion();
-          if(!VersionInfo.getBuildVersion().equals(jobTrackerBV)) {
+          String jtBuildVersion = jobClient.getBuildVersion();
+          String jtVersion = jobClient.getVIVersion();
+          if (!isPermittedVersion(jtBuildVersion, jtVersion)) {
             String msg = "Shutting down. Incompatible buildVersion." +
-            "\nJobTracker's: " + jobTrackerBV + 
-            "\nTaskTracker's: "+ VersionInfo.getBuildVersion();
-            LOG.error(msg);
+              "\nJobTracker's: " + jtBuildVersion +
+              "\nTaskTracker's: "+ VersionInfo.getBuildVersion() +
+              " and hadoop.relaxed.worker.version.check is " +
+              (relaxedVersionCheck ? "enabled" : "not enabled");
+            LOG.fatal(msg);
             try {
               jobClient.reportTaskTrackerError(taskTrackerName, null, msg);
             } catch(Exception e ) {
