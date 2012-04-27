@@ -1263,6 +1263,11 @@
     <chmod perm="ugo+x" type="file">
         <fileset dir="${dist.dir}/src/c++/pipes/debug"/>
     </chmod>
+    <chmod perm="ugo+x" type="file">
+        <fileset dir="${dist.dir}/c++/">
+          <include name="*/bin/*" />
+        </fileset>
+    </chmod>
 
   </target>
 
