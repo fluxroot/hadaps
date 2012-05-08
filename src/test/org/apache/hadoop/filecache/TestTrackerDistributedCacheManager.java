@@ -666,7 +666,7 @@ public class TestTrackerDistributedCacheManager extends TestCase {
     }
     TrackerDistributedCacheManager manager =
       new TrackerDistributedCacheManager(conf, taskController);
-    conf.set("fs.fakefile.impl", conf.get("fs.file.impl"));
+    conf.set("fs.fakefile.impl", FileSystem.getFileSystemClass("file", conf).getName());
     String userName = getJobOwnerName();
     conf.set("user.name", userName);
     Path fileToCache = new Path("fakefile:///"
