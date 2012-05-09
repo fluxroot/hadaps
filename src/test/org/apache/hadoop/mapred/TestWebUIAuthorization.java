@@ -754,7 +754,8 @@ public class TestWebUIAuthorization extends ClusterMapReduceTestCase {
     Properties props = new Properties();
     props.setProperty("hadoop.http.filter.initializers",
         DummyFilterInitializer.class.getName());
-    props.setProperty(CommonConfigurationKeys.HADOOP_SECURITY_AUTHORIZATION, "true");
+      props.setProperty(CommonConfigurationKeys.HADOOP_SECURITY_AUTHORIZATION, "true");
+      props.setProperty(CommonConfigurationKeys.HADOOP_SECURITY_INSTRUMENTATION_REQUIRES_ADMIN, "true");
     props.setProperty(JobConf.MR_ADMINS, mrAdminUser + " " + mrAdminGroup);
 
     startCluster(true, props);
