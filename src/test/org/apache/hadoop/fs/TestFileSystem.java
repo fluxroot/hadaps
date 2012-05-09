@@ -668,7 +668,7 @@ public class TestFileSystem extends TestCase {
   @SuppressWarnings("unchecked")
   public <T extends TokenIdentifier> void testCacheForUgi() throws Exception {
     final Configuration conf = new Configuration();
-    conf.set("fs.cachedfile.impl", conf.get("fs.file.impl"));
+    conf.set("fs.cachedfile.impl", FileSystem.getFileSystemClass("file", conf).getName());
     UserGroupInformation ugiA = UserGroupInformation.createRemoteUser("foo");
     UserGroupInformation ugiB = UserGroupInformation.createRemoteUser("bar");
     FileSystem fsA = ugiA.doAs(new PrivilegedExceptionAction<FileSystem>() {
@@ -719,7 +719,7 @@ public class TestFileSystem extends TestCase {
   
   public void testCloseAllForUGI() throws Exception {
     final Configuration conf = new Configuration();
-    conf.set("fs.cachedfile.impl", conf.get("fs.file.impl"));
+    conf.set("fs.cachedfile.impl", FileSystem.getFileSystemClass("file", conf).getName());
     UserGroupInformation ugiA = UserGroupInformation.createRemoteUser("foo");
     FileSystem fsA = ugiA.doAs(new PrivilegedExceptionAction<FileSystem>() {
       public FileSystem run() throws Exception {
