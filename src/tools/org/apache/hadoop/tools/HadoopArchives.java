@@ -641,6 +641,9 @@ public class HadoopArchives implements Tool {
     }
   }
   
+  // Hardcoding HAR version here because HARFileSystem comes from Hadoop2
+  private static final String HAR_VERSION = "1";
+	
   /** the reduce for creating the index and the master index 
    * 
    */
@@ -676,7 +679,7 @@ public class HadoopArchives implements Tool {
         }
         indexStream = fs.create(index);
         outStream = fs.create(masterIndex);
-        String version = HarFileSystem.VERSION + " \n";
+        String version = HAR_VERSION + " \n";
         outStream.write(version.getBytes());
         
       } catch(IOException e) {
