@@ -280,7 +280,7 @@ elif [ "$COMMAND" = "sampler" ] ; then
 elif [ "$COMMAND" = "dfsgroups" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.GetGroups
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
-elif [ "$COMMAND" = "mrgroups" ] ; then
+elif [ "$COMMAND" = "mrgroups" -o "$COMMAND" = "groups" ] ; then
   CLASS=org.apache.hadoop.mapred.tools.GetGroups
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
 elif [[ "$COMMAND" = -*  ]] ; then
