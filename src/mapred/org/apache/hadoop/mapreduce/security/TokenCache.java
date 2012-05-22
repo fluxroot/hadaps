@@ -20,6 +20,7 @@ package org.apache.hadoop.mapreduce.security;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -125,6 +126,17 @@ public class TokenCache {
             continue;
           }
         }
+        List<Token<?>> tokens =
+          fs.getDelegationTokens(delegTokenRenewer, credentials);
+        if (tokens != null) {
+          for (Token<?> token : tokens) {
+            credentials.addToken(token.getService(), token);
+            LOG.info("Got dt for " + fs.getUri() + ";uri="+ fsName + 
+                ";t.service="+token.getService());
+          }
+        }
+        //Call getDelegationToken as well for now - for FS implementations
+        // which may not have implmented getDelegationTokens (hftp)
         Token<?> token = fs.getDelegationToken(delegTokenRenewer);
         if (token != null) {
           credentials.addToken(token.getService(), token);

@@ -27,10 +27,13 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
@@ -64,6 +67,10 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 
 public class TestTokenCache {
@@ -298,5 +305,39 @@ public class TestTokenCache {
     assertNull(conf.get(TokenCache.MAPREDUCE_JOB_CREDENTIALS_BINARY));
   }
 
+  @Test
+  public void testGetTokensForViewFS() throws IOException, URISyntaxException {
+    Configuration conf = new Configuration(jConf);
+    FileSystem dfs = dfsCluster.getFileSystem();
+    String serviceName = dfs.getCanonicalServiceName();
 
+    Path p1 = new Path("/mount1");
+    Path p2 = new Path("/mount2");
+    p1 = dfs.makeQualified(p1);
+    p2 = dfs.makeQualified(p2);
+
+    conf.set("fs.viewfs.mounttable.default.link./dir1", p1.toString());
+    conf.set("fs.viewfs.mounttable.default.link./dir2", p2.toString());
+    Credentials credentials = new Credentials();
+    Path lp1 = new Path("viewfs:///dir1");
+    Path lp2 = new Path("viewfs:///dir2");
+    Path[] paths = new Path[2];
+    paths[0] = lp1;
+    paths[1] = lp2;
+    TokenCache.obtainTokensForNamenodesInternal(credentials, paths, conf);
+
+    Collection<Token<? extends TokenIdentifier>> tns =
+        credentials.getAllTokens();
+    assertEquals("number of tokens is not 1", 1, tns.size());
+
+    boolean found = false;
+    for (Token<? extends TokenIdentifier> tt : tns) {
+      System.out.println("token=" + tt);
+      if (tt.getKind().equals(DelegationTokenIdentifier.HDFS_DELEGATION_KIND)
+          && tt.getService().equals(new Text(serviceName))) {
+        found = true;
+      }
+      assertTrue("didn't find token for [" + lp1 + ", " + lp2 + "]", found);
+    }
+  }
 }
