@@ -61,6 +61,11 @@ public class TestTaskClasspathPrecedence {
       vargs.add(classPath);
       return vargs;
     }
+
+    @Override
+    public Level getLogLevel(JobConf jobConf) {
+      return Level.ALL;
+    }
   }
 
   @Before

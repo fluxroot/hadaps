@@ -46,6 +46,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.log4j.Level;
 
 /** Base class that runs a task in a separate process.  Tasks are run in a
  * separate process in order to isolate the map/reduce system code from bugs in
@@ -162,7 +163,14 @@ abstract class TaskRunner extends Thread {
   public String getChildEnv(JobConf jobConf) {
     return jobConf.get(JobConf.MAPRED_TASK_ENV);
   }
-  
+
+  /**
+   * Get the log {@link Level} for the child map/reduce tasks.
+   * @param jobConf
+   * @return the log-level for the child map/reduce tasks
+   */
+  public abstract Level getLogLevel(JobConf jobConf);
+
   @Override
   public final void run() {
     String errorInfo = "Child Error";
@@ -482,7 +490,7 @@ abstract class TaskRunner extends Thread {
       long logSize) {
     vargs.add("-Dhadoop.log.dir=" + 
         new File(System.getProperty("hadoop.log.dir")).getAbsolutePath());
-    vargs.add("-Dhadoop.root.logger=INFO,TLA");
+    vargs.add("-Dhadoop.root.logger=" + getLogLevel(conf).toString() + ",TLA");
     vargs.add("-D" + TaskLogAppender.TASKID_PROPERTY +  "=" + taskid);
     vargs.add("-D" + TaskLogAppender.ISCLEANUP_PROPERTY +
               "=" + t.isTaskCleanupTask());
