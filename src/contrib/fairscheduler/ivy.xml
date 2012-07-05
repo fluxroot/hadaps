@@ -59,5 +59,10 @@
       rev="${jetty.version}"
       conf="common->master"/>
       -->
+    <dependency org="org.mockito" 
+      name="mockito-all" 
+      rev="${mockito-all.version}" 
+      conf="common->default">
+    </dependency>
   </dependencies>
 </ivy-module>

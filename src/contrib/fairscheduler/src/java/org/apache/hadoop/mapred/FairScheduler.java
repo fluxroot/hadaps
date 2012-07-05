@@ -491,15 +491,16 @@ public class FairScheduler extends TaskScheduler {
    * The scheduler may launch fewer than this many tasks if the LoadManager
    * says not to launch more, but it will never launch more than this number.
    */
-  private int maxTasksToAssign(TaskType type, TaskTrackerStatus tts) {
+  protected int maxTasksToAssign(TaskType type, TaskTrackerStatus tts) {
     if (!assignMultiple)
       return 1;
     int cap = (type == TaskType.MAP) ? mapAssignCap : reduceAssignCap;
+    int availableSlots = (type == TaskType.MAP) ?
+        tts.getAvailableMapSlots(): tts.getAvailableReduceSlots();
     if (cap == -1) // Infinite cap; use the TaskTracker's slot count
-      return (type == TaskType.MAP) ?
-          tts.getAvailableMapSlots(): tts.getAvailableReduceSlots();
+      return availableSlots;
     else
-      return cap;
+      return Math.min(cap, availableSlots);
   }
 
   /**
