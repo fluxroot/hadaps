@@ -2004,7 +2004,15 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
         final String historyLogDir = 
           JobHistory.getCompletedJobHistoryLocation().toString();
         infoServer.setAttribute("historyLogDir", historyLogDir);
-        
+
+        infoServer.setAttribute
+          ("serialNumberDirectoryDigits",
+           new Integer(JobHistory.serialNumberDirectoryDigits()));
+
+        infoServer.setAttribute
+          ("serialNumberTotalDigits",
+           new Integer(JobHistory.serialNumberTotalDigits()));
+
         return new Path(historyLogDir).getFileSystem(conf);
       }
     });
