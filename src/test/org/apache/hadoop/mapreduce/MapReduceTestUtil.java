@@ -136,7 +136,7 @@ public class MapReduceTestUtil {
   public static Job createCopyJob(Configuration conf, Path outdir, 
       Path... indirs) throws Exception {
     conf.setInt("mapred.map.tasks", 3);
-    Job theJob = new Job(new JobConf(conf));
+    Job theJob = Job.getInstance(conf);
     theJob.setJobName("DataMoveJob");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -166,7 +166,7 @@ public class MapReduceTestUtil {
       fs.delete(outdir, true);
     }
     conf.setInt("mapred.map.max.attempts", 2);
-    Job theJob = new Job(new JobConf(conf));
+    Job theJob = Job.getInstance(conf);
     theJob.setJobName("Fail-Job");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -191,7 +191,7 @@ public class MapReduceTestUtil {
   public static Job createKillJob(Configuration conf, Path outdir, 
       Path... indirs) throws Exception {
 
-    Job theJob = new Job(new JobConf(conf));
+    Job theJob = Job.getInstance(conf);
     theJob.setJobName("Kill-Job");
 
     FileInputFormat.setInputPaths(theJob, indirs);
@@ -353,7 +353,7 @@ public class MapReduceTestUtil {
 
   public static Job createJob(Configuration conf, Path inDir, Path outDir, 
       int numInputFiles, int numReds, String input) throws IOException {
-    Job job = new Job(new JobConf(conf));
+    Job job = Job.getInstance(conf);
     FileSystem fs = FileSystem.get(conf);
     if (fs.exists(outDir)) {
       fs.delete(outDir, true);
