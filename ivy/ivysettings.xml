@@ -86,12 +86,14 @@
     <chain name="default" dual="true"
            checkmodified="true"
            changingPattern=".*SNAPSHOT">
+      <resolver ref="reactor-repo"/>
       <resolver ref="local"/>
       <resolver ref="maven2"/>
       <resolver ref="cdh-releases"/>
       <resolver ref="cloudera-snapshot"/> 
     </chain>
     <chain name="internal">
+      <resolver ref="reactor-repo"/>
       <resolver ref="local"/>
     </chain>
     <chain name="external">
@@ -99,6 +101,7 @@
       <resolver ref="cdh-releases"/>
     </chain>
     <chain name="external-and-snapshots">
+      <resolver ref="reactor-repo"/>
       <resolver ref="maven2"/>
       <resolver ref="cdh-releases"/>
       <resolver ref="apache-snapshot"/>
