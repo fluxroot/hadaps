@@ -17,6 +17,8 @@
  */
 package org.apache.hadoop.mapred;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,11 +30,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.ClusterWithLinuxTaskController.MyLinuxTaskController;
 import org.apache.hadoop.security.UserGroupInformation;
 
+import org.junit.Ignore;
+
 /**
  * Test to verify localization of a job and localization of a task on a
  * TaskTracker when {@link LinuxTaskController} is used.
  * 
  */
+@Ignore
 public class TestLocalizationWithLinuxTaskController extends
     TestTaskTrackerLocalization {
 

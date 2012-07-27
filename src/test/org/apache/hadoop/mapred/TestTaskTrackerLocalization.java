@@ -17,6 +17,10 @@
  */
 package org.apache.hadoop.mapred;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -26,8 +30,10 @@ import java.util.TreeMap;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Test;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,7 +62,7 @@ import org.apache.hadoop.util.Shell;
  * 
  */
 @Ignore // test relies on deprecated functionality/lifecycle
-public class TestTaskTrackerLocalization extends TestCase {
+public class TestTaskTrackerLocalization {
 
   private File TEST_ROOT_DIR;
   private File ROOT_MAPRED_LOCAL_DIR;
@@ -92,7 +98,7 @@ public class TestTaskTrackerLocalization extends TestCase {
     return true;
   }
 
-  @Override
+  @Before
   protected void setUp()
       throws Exception {
     if (!canRun()) {
@@ -261,7 +267,7 @@ public class TestTaskTrackerLocalization extends TestCase {
         TokenCache.JOB_TOKEN_HDFS_FILE), new Configuration());
   }
 
-  @Override
+  @After
   protected void tearDown()
       throws Exception {
     if (!canRun()) {

@@ -26,8 +26,6 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import junit.framework.TestCase;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,6 +34,8 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 
+import org.junit.After;
+
 /**
  * A test-cluster based on {@link MiniMRCluster} that is started with
  * CapacityTaskScheduler. It provides knobs to configure both the cluster as
@@ -43,7 +43,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
  * should extend this.
  * 
  */
-public class ClusterWithCapacityScheduler extends TestCase {
+public class ClusterWithCapacityScheduler {
 
   static final Log LOG = LogFactory.getLog(ClusterWithCapacityScheduler.class);
   private MiniMRCluster mrCluster;
@@ -153,8 +153,8 @@ public class ClusterWithCapacityScheduler extends TestCase {
     return this.mrCluster.getJobTrackerRunner().getJobTracker();
   }
 
-  @Override
-  protected void tearDown()
+  @After
+  public void tearDown()
       throws Exception {
     cleanUpSchedulerConfigFile();
     
