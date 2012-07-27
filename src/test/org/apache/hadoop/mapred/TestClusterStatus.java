@@ -152,7 +152,7 @@ public class TestClusterStatus extends TestCase {
 
   private TaskTrackerStatus getTTStatus(String trackerName,
       List<TaskStatus> taskStatuses) {
-    return new TaskTrackerStatus(trackerName, 
+    return new TaskTrackerStatus(trackerName, "http",
       JobInProgress.convertTrackerNameToHostName(trackerName), 0,
       taskStatuses, 0, 0, mapSlotsPerTracker, reduceSlotsPerTracker);
   }
@@ -266,10 +266,10 @@ public class TestClusterStatus extends TestCase {
     TaskTracker tt1 = jobTracker.getTaskTracker(trackers[0]);
     TaskTracker tt2 = jobTracker.getTaskTracker(trackers[1]);
     TaskTrackerStatus status1 = new TaskTrackerStatus(
-        trackers[0],JobInProgress.convertTrackerNameToHostName(
+        trackers[0],"http", JobInProgress.convertTrackerNameToHostName(
             trackers[0]),0,new ArrayList<TaskStatus>(), 0, 0, 2, 2);
     TaskTrackerStatus status2 = new TaskTrackerStatus(
-        trackers[1],JobInProgress.convertTrackerNameToHostName(
+        trackers[1],"http", JobInProgress.convertTrackerNameToHostName(
             trackers[1]),0,new ArrayList<TaskStatus>(), 0, 0, 2, 2);
     tt1.setStatus(status1);
     tt2.setStatus(status2);

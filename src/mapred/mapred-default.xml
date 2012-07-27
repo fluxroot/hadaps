@@ -1253,4 +1253,30 @@
   </description>
 </property>
 
+  <!-- Encrypted Shuffle Configuration -->
+
+<property>
+  <name>mapreduce.shuffle.ssl.enabled</name>
+  <value>false</value>
+  <description>
+    Whether to use SSL for for the Shuffle HTTP endpoints.
+  </description>
+</property>
+
+<property>
+  <name>mapreduce.shuffle.ssl.address</name>
+  <value>0.0.0.0</value>
+  <description>
+    IP Address to bind the SSL Shuffle endpoint.
+  </description>
+</property>
+
+<property>
+  <name>mapreduce.shuffle.ssl.port</name>
+  <value>50443</value>
+  <description>
+    Port to bind the SSL Shuffle endpoint.
+  </description>
+</property>
+  
 </configuration>

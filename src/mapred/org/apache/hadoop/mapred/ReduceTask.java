@@ -29,8 +29,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URL;
+import java.net.HttpURLConnection;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.security.GeneralSecurityException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +51,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.crypto.SecretKey;
+import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -82,6 +85,7 @@ import org.apache.hadoop.metrics.MetricsContext;
 import org.apache.hadoop.metrics.MetricsRecord;
 import org.apache.hadoop.metrics.MetricsUtil;
 import org.apache.hadoop.metrics.Updater;
+import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.util.Progress;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -148,6 +152,9 @@ class ReduceTask extends Task {
   // A sorted set for keeping a set of map output files on disk
   private final SortedSet<FileStatus> mapOutputFilesOnDisk = 
     new TreeSet<FileStatus>(mapOutputFileComparator);
+
+  private static boolean sslShuffle;
+  private static SSLFactory sslFactory;
 
   public ReduceTask() {
     super();
@@ -372,7 +379,19 @@ class ReduceTask extends Task {
       runTaskCleanupTask(umbilical, reporter);
       return;
     }
-    
+
+    sslShuffle = job.getBoolean(JobTracker.SHUFFLE_SSL_ENABLED_KEY,
+                                JobTracker.SHUFFLE_SSL_ENABLED_DEFAULT);
+    if (sslShuffle && sslFactory == null) {
+      sslFactory = new SSLFactory(SSLFactory.Mode.CLIENT, job);
+      try {
+        sslFactory.init();
+      } catch (Exception ex) {
+        sslFactory.destroy();
+        throw new RuntimeException(ex);
+      }
+    }
+
     // Initialize the codec
     codec = initCodec();
 
@@ -418,6 +437,10 @@ class ReduceTask extends Task {
                     keyClass, valueClass);
     }
     done(umbilical, reporter);
+
+    if (sslFactory != null) {
+      sslFactory.destroy();
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -1389,6 +1412,20 @@ class ReduceTask extends Task {
         ramManager.setNumCopiedMapOutputs(numMaps - copiedMapOutputs.size());
       }
 
+      protected HttpURLConnection openConnection(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        if (sslShuffle) {
+          HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
+          try {
+            httpsConn.setSSLSocketFactory(sslFactory.createSSLSocketFactory());
+          } catch (GeneralSecurityException ex) {
+            throw new IOException(ex);
+          }
+          httpsConn.setHostnameVerifier(sslFactory.getHostnameVerifier());
+        }
+        return conn;
+      }
+
       /**
        * Get the map output into a local file (either in the inmemory fs or on the 
        * local fs) from the remote server.
@@ -1405,7 +1442,7 @@ class ReduceTask extends Task {
       throws IOException, InterruptedException {
         // Connect
         URL url = mapOutputLoc.getOutputLocation();
-        URLConnection connection = url.openConnection();
+        HttpURLConnection connection = openConnection(url);
         
         InputStream input = setupSecureConnection(mapOutputLoc, connection);
  
@@ -1583,7 +1620,7 @@ class ReduceTask extends Task {
         if (!createdNow) {
           // Reconnect
           try {
-            connection = mapOutputLoc.getOutputLocation().openConnection();
+            connection = openConnection(mapOutputLoc.getOutputLocation());
             input = setupSecureConnection(mapOutputLoc, connection);
           } catch (IOException ioe) {
             LOG.info("Failed reopen connection to fetch map-output from " + 

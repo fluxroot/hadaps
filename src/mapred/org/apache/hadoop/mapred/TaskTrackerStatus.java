@@ -45,6 +45,7 @@ public class TaskTrackerStatus implements Writable {
   }
 
   String trackerName;
+  String urlScheme;
   String host;
   int httpPort;
   int taskFailures;
@@ -356,11 +357,11 @@ public class TaskTrackerStatus implements Writable {
 
   /**
    */
-  public TaskTrackerStatus(String trackerName, String host, 
-                           int httpPort, List<TaskStatus> taskReports, 
+  public TaskTrackerStatus(String trackerName, String urlScheme, String host,                           int httpPort, List<TaskStatus> taskReports,
                            int taskFailures, int dirFailures,
                            int maxMapTasks, int maxReduceTasks) {
     this.trackerName = trackerName;
+    this.urlScheme = urlScheme;
     this.host = host;
     this.httpPort = httpPort;
 
@@ -378,6 +379,13 @@ public class TaskTrackerStatus implements Writable {
   public String getTrackerName() {
     return trackerName;
   }
+
+  /**
+   */
+  public String getUrlScheme() {
+    return urlScheme;
+  }
+
   /**
    */
   public String getHost() {
@@ -660,6 +668,7 @@ public class TaskTrackerStatus implements Writable {
   ///////////////////////////////////////////
   public void write(DataOutput out) throws IOException {
     Text.writeString(out, trackerName);
+    Text.writeString(out, urlScheme);
     Text.writeString(out, host);
     out.writeInt(httpPort);
     out.writeInt(taskFailures);
@@ -677,6 +686,7 @@ public class TaskTrackerStatus implements Writable {
 
   public void readFields(DataInput in) throws IOException {
     this.trackerName = Text.readString(in);
+    this.urlScheme = Text.readString(in);
     this.host = Text.readString(in);
     this.httpPort = in.readInt();
     this.taskFailures = in.readInt();

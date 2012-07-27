@@ -172,7 +172,19 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
     "mapreduce.cluster.delegation.token.max-lifetime";
   public static final long    DELEGATION_TOKEN_MAX_LIFETIME_DEFAULT =  
     7*24*60*60*1000; // 7 days
-  
+
+  // Encrypted Shuffle constants.
+
+  public static final String SHUFFLE_SSL_ENABLED_KEY =
+    "mapreduce.shuffle.ssl.enabled";
+  public static final boolean SHUFFLE_SSL_ENABLED_DEFAULT = false;
+  public static final String SHUFFLE_SSL_ADDRESS_KEY =
+      "mapreduce.shuffle.ssl.address";
+  public static final String SHUFFLE_SSL_ADDRESS_DEFAULT = "0.0.0.0";
+  public static final String SHUFFLE_SSL_PORT_KEY =
+        "mapreduce.shuffle.ssl.port";
+  public static final int SHUFFLE_SSL_PORT_DEFAULT = 50443;
+
   // Approximate number of heartbeats that could arrive JobTracker
   // in a second
   static final String JT_HEARTBEATS_IN_SECOND = "mapred.heartbeats.in.second";
@@ -1284,7 +1296,7 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
       
       // III. Create the dummy tasktracker status
       TaskTrackerStatus ttStatus = 
-        new TaskTrackerStatus(trackerName, trackerHostName, port, ttStatusList, 
+        new TaskTrackerStatus(trackerName, "http", trackerHostName, port, ttStatusList,
                               0 , 0, 0, 0);
       ttStatus.setLastSeen(clock.getTime());
 

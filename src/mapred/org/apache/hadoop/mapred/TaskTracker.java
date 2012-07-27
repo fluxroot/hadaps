@@ -26,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +49,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -101,10 +103,12 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.PolicyProvider;
+import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.util.DiskChecker;
 import org.apache.hadoop.util.MemoryCalculatorPlugin;
 import org.apache.hadoop.util.ResourceCalculatorPlugin;
 import org.apache.hadoop.util.ProcfsBasedProcessTree;
+import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -115,6 +119,7 @@ import org.apache.hadoop.util.Shell.ShellCommandExecutor;
 import org.apache.hadoop.util.MRAsyncDiskService;
 import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.security.Credentials;
+import org.mortbay.jetty.security.SslSocketConnector;
 
 /*******************************************************
  * TaskTracker is a process that starts and tracks MR Tasks
@@ -148,6 +153,10 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
 
   static final long WAIT_FOR_DONE = 3 * 1000;
   private int httpPort;
+
+  private SSLFactory sslFactory;
+  private String shuffleScheme;
+  private int shufflePort;
 
   static enum State {NORMAL, STALE, INTERRUPTED, DENIED}
 
@@ -305,7 +314,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   // The filesystem where job files are stored
   FileSystem systemFS = null;
   private LocalFileSystem localFs = null;
-  private final HttpServer server;
+  private final TTHttpServer server;
     
   volatile boolean shuttingDown = false;
     
@@ -1493,6 +1502,9 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
       try {
         LOG.info("Shutting down StatusHttpServer");
         this.server.stop();
+        if (sslFactory != null) {
+          sslFactory.destroy();
+        }
       } catch (Exception e) {
         LOG.warn("Exception shutting down TaskTracker", e);
       }
@@ -1599,7 +1611,40 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   void setLocalDirAllocator(LocalDirAllocator in) {
     localDirAllocator = in;
   }
-  
+
+  private static class TTHttpServer extends HttpServer {
+
+    public TTHttpServer(String name, String bindAddress, int port,
+        boolean findPort, Configuration conf, AccessControlList adminsAcl)
+        throws IOException {
+      super(name, bindAddress, port, findPort, conf, adminsAcl, null, null);
+    }
+
+    /**
+     * Configure an ssl listener on the server for shuffle.
+     *
+     * @param addr address to listen on.
+     * @param sslFactory SSLFactory to use.
+     */
+    public void addSslListener(InetSocketAddress addr, final SSLFactory sslFactory)
+      throws IOException {
+      if (webServer.isStarted()) {
+        throw new IOException("Failed to add ssl listener");
+      }
+
+      SslSocketConnector sslListener = new SslSocketConnector() {
+        @Override
+        protected SSLServerSocketFactory createFactory() throws Exception {
+          return sslFactory.createSSLServerSocketFactory();
+        }
+      };
+
+      sslListener.setHost(addr.getHostName());
+      sslListener.setPort(addr.getPort());
+      webServer.addConnector(sslListener);
+    }
+
+  }
   /**
    * Start with the local machine name, and the default JobTracker
    */
@@ -1624,7 +1669,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     InetSocketAddress infoSocAddr = NetUtils.createSocketAddr(infoAddr);
     String httpBindAddress = infoSocAddr.getHostName();
     int httpPort = infoSocAddr.getPort();
-    this.server = new HttpServer("task", httpBindAddress, httpPort,
+    this.server = new TTHttpServer("task", httpBindAddress, httpPort,
         httpPort == 0, conf, aclsManager.getAdminsAcl());
     this.shuffleServerMetrics = new ShuffleServerMetrics(conf);
     workerThreads = conf.getInt("tasktracker.http.threads", 40);
@@ -1664,8 +1709,32 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     server.setAttribute("exceptionMsgRegex", exceptionMsgRegex);
     server.addInternalServlet("mapOutput", "/mapOutput", MapOutputServlet.class);
     server.addServlet("taskLog", "/tasklog", TaskLogServlet.class);
+
+    boolean shuffleSsl = conf.getBoolean(JobTracker.SHUFFLE_SSL_ENABLED_KEY,
+                                         JobTracker.SHUFFLE_SSL_ENABLED_DEFAULT);
+    shuffleScheme = (shuffleSsl) ? "https" : "http";
+    server.setAttribute(JobTracker.SHUFFLE_SSL_ENABLED_KEY, shuffleSsl);
+    if (shuffleSsl) {
+      sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
+      try {
+        sslFactory.init();
+      } catch (GeneralSecurityException ex) {
+        throw new RuntimeException(ex);
+      }
+      String sslHostname = conf.get(JobTracker.SHUFFLE_SSL_ADDRESS_KEY,
+                                    JobTracker.SHUFFLE_SSL_ADDRESS_DEFAULT);
+      int sslPort = conf.getInt(
+        JobTracker.SHUFFLE_SSL_PORT_KEY, JobTracker.SHUFFLE_SSL_PORT_DEFAULT);
+      InetSocketAddress sslAddr = new InetSocketAddress(sslHostname, sslPort);
+      server.addSslListener(sslAddr, sslFactory);
+      shufflePort = sslPort;
+    }
+
     server.start();
     this.httpPort = server.getPort();
+    if (sslFactory == null) {
+      shufflePort = this.httpPort;
+    }
     checkJettyPort(httpPort);
     LOG.info("FILE_CACHE_SIZE for mapOutputServlet set to : " + FILE_CACHE_SIZE);
     mapRetainSize = conf.getLong(TaskLogsTruncater.MAP_USERLOG_RETAIN_SIZE, 
@@ -1968,8 +2037,8 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     //
     if (status == null) {
       synchronized (this) {
-        status = new TaskTrackerStatus(taskTrackerName, localHostname, 
-                                       httpPort, 
+        status = new TaskTrackerStatus(taskTrackerName, shuffleScheme, localHostname,
+                                       shufflePort,
                                        cloneAndResetRunningTaskStatuses(
                                          sendAllCounters), 
                                        taskFailures,
@@ -3981,11 +4050,27 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     private static final int RESPONSE_BUFFER_SIZE = MAX_BYTES_TO_READ + 16;
     private static LRUCache<String, Path> fileCache = new LRUCache<String, Path>(FILE_CACHE_SIZE);
     private static LRUCache<String, Path> fileIndexCache = new LRUCache<String, Path>(FILE_CACHE_SIZE);
-    
+
+
+    private boolean shuffleSsl = false;
+
+    @Override
+    public void init() throws ServletException {
+      super.init();
+      shuffleSsl =
+        (Boolean) getServletContext().getAttribute(
+          JobTracker.SHUFFLE_SSL_ENABLED_KEY);
+    }
+
     @Override
     public void doGet(HttpServletRequest request, 
                       HttpServletResponse response
                       ) throws ServletException, IOException {
+      if (shuffleSsl && !request.isSecure()) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+          "Encrypted Shuffle is enabled, shuffle is only served over HTTPS");
+        return;
+      }
       String mapId = request.getParameter("map");
       String reduceId = request.getParameter("reduce");
       String jobId = request.getParameter("job");

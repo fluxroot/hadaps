@@ -347,7 +347,7 @@ public class TestFairScheduler extends TestCase {
          String host = "rack" + rack + ".node" + node;
          System.out.println("Creating TaskTracker tt" + id + " on " + host);
          TaskTracker tt = new TaskTracker("tt" + id);
-         tt.setStatus(new TaskTrackerStatus("tt" + id, host, 0,
+         tt.setStatus(new TaskTrackerStatus("tt" + id, "http", host, 0,
              new ArrayList<TaskStatus>(), 0, 0,
              maxMapTasksPerTracker, maxReduceTasksPerTracker));
          trackers.put("tt" + id, tt);
@@ -357,14 +357,14 @@ public class TestFairScheduler extends TestCase {
 
     public FakeTaskTrackerManager() {
       TaskTracker tt1 = new TaskTracker("tt1");
-      tt1.setStatus(new TaskTrackerStatus("tt1", "tt1.host", 1,
+      tt1.setStatus(new TaskTrackerStatus("tt1", "http", "tt1.host", 1,
                                           new ArrayList<TaskStatus>(), 0, 0,
                                           maxMapTasksPerTracker, 
                                           maxReduceTasksPerTracker));
       trackers.put("tt1", tt1);
       
       TaskTracker tt2 = new TaskTracker("tt2");
-      tt2.setStatus(new TaskTrackerStatus("tt2", "tt2.host", 2,
+      tt2.setStatus(new TaskTrackerStatus("tt2", "http", "tt2.host", 2,
                                           new ArrayList<TaskStatus>(), 0, 0,
                                           maxMapTasksPerTracker, 
                                           maxReduceTasksPerTracker));
