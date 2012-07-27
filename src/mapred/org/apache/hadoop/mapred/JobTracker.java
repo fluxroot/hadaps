@@ -1519,13 +1519,12 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
           in.close();
           final UserGroupInformation ugi = UserGroupInformation
               .createRemoteUser(token.getUser().toString());
+          JobConf job = new JobConf();
+          final Credentials ts =
+            jobTokenFile.getFileSystem(job).exists(jobTokenFile) ?
+            Credentials.readTokenStorageFile(jobTokenFile, job) : null;
           ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
             public JobStatus run() throws IOException, InterruptedException {
-              Credentials ts = null;
-              JobConf job = new JobConf();
-              if (jobTokenFile.getFileSystem(job).exists(jobTokenFile)) {
-                ts = Credentials.readTokenStorageFile(jobTokenFile, job);
-              }
               return submitJob(JobID.downgrade(token.getJobID()), token
                   .getJobSubmitDir().toString(), ugi, ts, true);
             }
