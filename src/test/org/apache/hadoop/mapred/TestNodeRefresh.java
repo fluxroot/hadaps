@@ -267,8 +267,10 @@ public class TestNodeRefresh extends TestCase {
   public void testMRRefreshDecommissioning() throws IOException {
     // start a cluster with 2 hosts and empty exclude-hosts file
     Configuration conf = new Configuration();
+    conf.set("mapred.hosts.exclude", "hosts.exclude");
     File file = new File("hosts.exclude");
     file.delete();
+    file.createNewFile();
     startCluster(2, 1, 0, UserGroupInformation.getLoginUser(), conf);
     String hostToDecommission = getHostname(1);
     conf = mr.createJobConf(new JobConf(conf));
@@ -287,7 +289,16 @@ public class TestNodeRefresh extends TestCase {
       out.close();
     }
     file.deleteOnExit();
-
+    
+    Configuration.addDefaultResource("extra.xml");
+    writeToFile(new File("build/test/classes/extra.xml"),
+      "<configuration>" +
+      "<property>" +
+      "<name>mapred.hosts.exclude</name>" +
+      "<value>hosts.exclude</value>" +
+      "</property>" +
+      "</configuration>");
+    
     AdminOperationsProtocol client = getClient(conf, owner);
     try {
       client.refreshNodes();
@@ -383,5 +394,19 @@ public class TestNodeRefresh extends TestCase {
     assertTrue("Tracker from excluded host doesnt exist", seen);
     
     stopCluster();
+  }
+  
+  private void writeToFile(File file, String contents) throws IOException {
+    FileOutputStream out = new FileOutputStream(file);
+    BufferedWriter writer = null;
+    try {
+      writer = new BufferedWriter(new OutputStreamWriter(out));
+      writer.write(contents);
+    } finally {
+      if (writer != null) {
+        writer.close();
+      }
+      out.close();
+    }
   }
 }
