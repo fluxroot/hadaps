@@ -68,6 +68,7 @@ public class TestShuffleJobToken {
     }
     server = new HttpServer("test", "0.0.0.0", 0, true);
     server.addServlet("shuffle", "/mapOutput", TaskTracker.MapOutputServlet.class);
+    server.setAttribute(JobTracker.SHUFFLE_SSL_ENABLED_KEY, false);
     server.start();
     int port = server.getPort();
     baseUrl = new URL("http://localhost:" + port + "/");
