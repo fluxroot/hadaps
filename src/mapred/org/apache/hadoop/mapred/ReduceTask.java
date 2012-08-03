@@ -684,11 +684,6 @@ class ReduceTask extends Task {
      * A flag to indicate when to exit localFS merge
      */
     private volatile boolean exitLocalFSMerge = false;
-
-    /** 
-     * A flag to indicate when to exit getMapEvents thread 
-     */
-    private volatile boolean exitGetMapEvents = false;
     
     /**
      * When we accumulate maxInMemOutputs number of files in ram, we merge/spill
@@ -2133,7 +2128,9 @@ class ReduceTask extends Task {
               // we should indicate progress as we don't want TT to think
               // we're stuck and kill us
               reporter.progress();
-              Thread.sleep(5000);
+              synchronized (copyResultsOrNewEventsLock) {
+                copyResultsOrNewEventsLock.wait(5000);
+              }
             }
           } catch (InterruptedException e) { } // IGNORE
           
@@ -2271,9 +2268,8 @@ class ReduceTask extends Task {
         }
         
         // all done, inform the copiers to exit
-        exitGetMapEvents= true;
         try {
-          getMapEventsThread.join();
+          getMapEventsThread.terminate();
           LOG.info("getMapsEventsThread joined.");
         } catch (InterruptedException ie) {
           LOG.info("getMapsEventsThread threw an exception: " +
@@ -2775,6 +2771,10 @@ class ReduceTask extends Task {
 
     private class GetMapEventsThread extends Thread {
       
+      /** 
+       * A flag to indicate when to exit getMapEvents thread 
+       */
+      private volatile boolean exitGetMapEvents = false;
       private IntWritable fromEventId = new IntWritable(0);
       private static final long SLEEP_TIME = 1000;
       
@@ -2803,7 +2803,9 @@ class ReduceTask extends Task {
                     "Got " + numNewMaps + " new map-outputs"); 
               }
             }
-            Thread.sleep(SLEEP_TIME);
+            synchronized(this) {
+              wait(SLEEP_TIME);
+            }
           } 
           catch (InterruptedException e) {
             LOG.warn(reduceTask.getTaskID() +
@@ -2821,6 +2823,14 @@ class ReduceTask extends Task {
 
         LOG.info("GetMapEventsThread exiting");
       
+      }
+      
+      public void terminate() throws InterruptedException {
+        exitGetMapEvents = true;
+        synchronized(this) {
+          notifyAll();
+        }
+        join();
       }
       
       /** 

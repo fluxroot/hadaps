@@ -91,7 +91,8 @@ class Child {
     final InetSocketAddress address = new InetSocketAddress(host, port);
     final TaskAttemptID firstTaskid = TaskAttemptID.forName(args[2]);
     final String logLocation = args[3];
-    final int SLEEP_LONGER_COUNT = 5;
+    final int minIdleSleepTimeMillis = 10;
+    final int maxIdleSleepTimeMillis = 1500;
     int jvmIdInt = Integer.parseInt(args[4]);
     JVMId jvmId = new JVMId(firstTaskid.getJobID(),firstTaskid.isMap(),jvmIdInt);
     
@@ -174,7 +175,7 @@ class Child {
       pid = System.getenv().get("JVM_PID");
     }
     JvmContext context = new JvmContext(jvmId, pid);
-    int idleLoopCount = 0;
+    int idleSleepTime = minIdleSleepTimeMillis;
     Task task = null;
     
     UserGroupInformation childUGI = null;
@@ -193,17 +194,14 @@ class Child {
             taskid = null;
             currentJobSegmented = true;
 
-            if (++idleLoopCount >= SLEEP_LONGER_COUNT) {
-              //we sleep for a bigger interval when we don't receive
-              //tasks for a while
-              Thread.sleep(1500);
-            } else {
-              Thread.sleep(500);
+            Thread.sleep(idleSleepTime);
+            if (idleSleepTime * 2 <= maxIdleSleepTimeMillis) {
+              idleSleepTime = idleSleepTime * 2;
             }
             continue;
           }
         }
-        idleLoopCount = 0;
+        idleSleepTime = minIdleSleepTimeMillis;
         task = myTask.getTask();
         task.setJvmContext(jvmContext);
         taskid = task.getTaskID();
