@@ -13,6 +13,7 @@
   import="org.apache.hadoop.security.UserGroupInformation"
   import="java.security.PrivilegedExceptionAction"
   import="org.apache.hadoop.security.AccessControlException"
+  import="org.apache.hadoop.http.HttpConfig"
 %>
 <%!static SimpleDateFormat dateFormat = new SimpleDateFormat(
       "d-MMM-yyyy HH:mm:ss"); %>
@@ -192,7 +193,7 @@
         cleanupTrackerName = tip.machineWhereCleanupRan(status.getTaskID());
         cleanupTracker = tracker.getTaskTrackerStatus(cleanupTrackerName);
         if (cleanupTracker != null) {
-          cleanupAttemptTracker = "http://" + cleanupTracker.getHost() + ":"
+          cleanupAttemptTracker = HttpConfig.getSchemePrefix() + cleanupTracker.getHost() + ":"
             + cleanupTracker.getHttpPort();
         }
         hasCleanupAttempt = true;
@@ -204,7 +205,7 @@
       if (taskTracker == null) {
         out.print(taskTrackerName);
       } else {
-        taskAttemptTracker = "http://" + taskTracker.getHost() + ":"
+        taskAttemptTracker = HttpConfig.getSchemePrefix() + taskTracker.getHost() + ":"
           + taskTracker.getHttpPort();
         out.print("<a href=\"" + taskAttemptTracker + "\">"
           + tracker.getNode(taskTracker.getHost()) + "</a>");
@@ -254,8 +255,7 @@
         out.print("<td>");
         String taskLogUrl = null;
         if (taskTracker != null ) {
-        	taskLogUrl = TaskLogServlet.getTaskLogUrl(taskTracker.getHost(),
-        						String.valueOf(taskTracker.getHttpPort()),
+            taskLogUrl = TaskLogServlet.getTaskLogUrl(taskTracker,
         						status.getTaskID().toString());
       	}
         if (hasCleanupAttempt) {

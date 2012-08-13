@@ -38,6 +38,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.http.HtmlQuoting;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.http.HttpConfig;
 
 /**
  * A servlet that is run by the TaskTrackers to provide the task logs via http.
@@ -63,8 +64,19 @@ public class TaskLogServlet extends HttpServlet {
    */
   public static String getTaskLogUrl(String taskTrackerHostName,
       String httpPort, String taskAttemptID) {
-    return ("http://" + taskTrackerHostName + ":" + httpPort
+    return (HttpConfig.getSchemePrefix() + taskTrackerHostName + ":" + httpPort
         + "/tasklog?attemptid=" + taskAttemptID);
+  }
+
+  /**
+   * Construct the taskLogUrl
+   * @param status
+   * @param taskAttemptID
+   * @return the taskLogUrl
+   */
+  public static String getTaskLogUrl(TaskTrackerStatus status, String taskAttemptID) {
+    return getTaskLogUrl(status.getHost(),
+        String.valueOf(status.getHttpPort()), taskAttemptID);
   }
 
   private void printTaskLog(HttpServletResponse response,

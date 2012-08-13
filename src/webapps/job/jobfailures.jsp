@@ -9,6 +9,7 @@
   import="org.apache.hadoop.mapred.JSPUtil.JobWithViewAccessCheck"
   import="org.apache.hadoop.mapreduce.TaskType"
   import="org.apache.hadoop.util.*"
+  import="org.apache.hadoop.http.HttpConfig"
 %>
 
 <%!	private static final long serialVersionUID = 1L;
@@ -38,7 +39,8 @@
         if (taskTracker == null) {
           out.print("<td>" + taskTrackerName + "</td>");
         } else {
-          out.print("<td><a href=\"http://" + taskTracker.getHost() + ":" +
+          out.print("<td><a href=\"" + HttpConfig.getSchemePrefix() +
+                    "" + taskTracker.getHost() + ":" +
                     taskTracker.getHttpPort() + "\">" +  taskTracker.getHost() + 
                     "</a></td>");
         }
@@ -61,9 +63,8 @@
         out.print("<td>");
         String taskLogUrl = null;
         if (taskTracker != null) {
-          taskLogUrl = TaskLogServlet.getTaskLogUrl(taskTracker.getHost(),
-                                String.valueOf(taskTracker.getHttpPort()),
-                                statuses[i].getTaskID().toString());
+          taskLogUrl = TaskLogServlet.getTaskLogUrl(taskTracker,
+                statuses[i].getTaskID().toString());
         }
         if (taskLogUrl != null) {
           String tailFourKBUrl = taskLogUrl + "&start=-4097";

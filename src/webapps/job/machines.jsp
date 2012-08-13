@@ -7,6 +7,7 @@
   import="java.text.DecimalFormat"
   import="org.apache.hadoop.mapred.*"
   import="org.apache.hadoop.util.*"
+  import="org.apache.hadoop.http.HttpConfig"
 %>
 <%!	private static final long serialVersionUID = 1L;
 %>
@@ -91,7 +92,7 @@
           failureKing = tt.getTrackerName();
         }
         int numDirFailures = tt.getDirFailures();
-        out.print("<tr><td><a href=\"http://");
+        out.print("<tr><td><a href=\"" + HttpConfig.getSchemePrefix());
         out.print(tt.getHost() + ":" + tt.getHttpPort() + "/\">");
         out.print(tt.getTrackerName() + "</a></td><td>");
         out.print(tt.getHost() + "</td><td>" + numCurTasks +

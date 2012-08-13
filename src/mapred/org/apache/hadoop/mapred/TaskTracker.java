@@ -73,6 +73,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.http.HttpServer;
+import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.io.ReadaheadPool;
@@ -1715,19 +1716,22 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     shuffleScheme = (shuffleSsl) ? "https" : "http";
     server.setAttribute(JobTracker.SHUFFLE_SSL_ENABLED_KEY, shuffleSsl);
     if (shuffleSsl) {
-      sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
-      try {
-        sslFactory.init();
-      } catch (GeneralSecurityException ex) {
-        throw new RuntimeException(ex);
+      //if web UI is secure, no need ot use a second SSL listener for shuffle
+      if (!HttpConfig.isSecure()) {
+        sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
+        try {
+          sslFactory.init();
+        } catch (GeneralSecurityException ex) {
+          throw new RuntimeException(ex);
+        }
+        String sslHostname = conf.get(JobTracker.SHUFFLE_SSL_ADDRESS_KEY,
+                                      JobTracker.SHUFFLE_SSL_ADDRESS_DEFAULT);
+        int sslPort = conf.getInt(
+          JobTracker.SHUFFLE_SSL_PORT_KEY, JobTracker.SHUFFLE_SSL_PORT_DEFAULT);
+        InetSocketAddress sslAddr = new InetSocketAddress(sslHostname, sslPort);
+        server.addSslListener(sslAddr, sslFactory);
+        shufflePort = sslPort;
       }
-      String sslHostname = conf.get(JobTracker.SHUFFLE_SSL_ADDRESS_KEY,
-                                    JobTracker.SHUFFLE_SSL_ADDRESS_DEFAULT);
-      int sslPort = conf.getInt(
-        JobTracker.SHUFFLE_SSL_PORT_KEY, JobTracker.SHUFFLE_SSL_PORT_DEFAULT);
-      InetSocketAddress sslAddr = new InetSocketAddress(sslHostname, sslPort);
-      server.addSslListener(sslAddr, sslFactory);
-      shufflePort = sslPort;
     }
 
     server.start();
