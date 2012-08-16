@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TaskLog;
 
 /**
  * This class is a container of multiple thread pools, each for a volume,
@@ -314,7 +315,8 @@ public class MRAsyncDiskService {
       // List all files inside the volumes
       FileStatus[] files = null;
       try {
-        files = localFileSystem.listStatus(new Path(volumes[v]));
+        files = localFileSystem.listStatus(new Path(volumes[v]),
+            TaskLog.USERLOGS_PATH_FILTER);
       } catch (Exception e) {
         // Ignore exceptions in listStatus
         // We tolerate missing volumes.

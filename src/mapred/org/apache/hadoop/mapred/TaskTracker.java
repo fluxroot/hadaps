@@ -798,7 +798,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     return ProtocolSignature.getProtocolSignature(
         this, protocol, clientVersion, clientMethodsHash);
   }
-
+  
   /**
    * Delete all of the user directories.
    * @param conf the TT configuration
@@ -807,7 +807,8 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   private void deleteUserDirectories(Configuration conf) throws IOException {
     for(String root: localStorage.getDirs()) {
       try {
-        for(FileStatus status: localFs.listStatus(new Path(root, SUBDIR))) {
+        for (FileStatus status : localFs.listStatus(new Path(root, SUBDIR),
+            TaskLog.USERLOGS_PATH_FILTER)) {
           String owner = status.getOwner();
           String path = status.getPath().getName();
           if (path.equals(owner)) {

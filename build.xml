@@ -840,6 +840,7 @@
              errorProperty="tests.failed"
              failureProperty="tests.failed">
         <assertions><enable/></assertions>
+        <syspropertyset><propertyref builtin="commandline"/></syspropertyset>
         <sysproperty key="test.build.data" value="${test.build.data}" />
         <sysproperty key="test.tools.input.dir"
                      value="${test.tools.input.dir}" />

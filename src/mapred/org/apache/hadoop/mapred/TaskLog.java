@@ -43,6 +43,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.SecureIOUtils;
 import org.apache.hadoop.mapreduce.JobID;
@@ -78,6 +79,16 @@ public class TaskLog {
   }
   
   static AtomicInteger rotor = new AtomicInteger(0);
+
+  /**
+   * Path filter that filters out userlogs directory.
+   */
+  public static final PathFilter USERLOGS_PATH_FILTER = new PathFilter() {
+    @Override
+    public boolean accept(Path path) {
+      return !path.toString().contains(USERLOGS_DIR_NAME);
+    }
+  };
 
   /**
    * Create log directory for the given attempt. This involves creating the
