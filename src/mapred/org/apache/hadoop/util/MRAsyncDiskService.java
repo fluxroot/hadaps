@@ -121,7 +121,7 @@ public class MRAsyncDiskService {
   public MRAsyncDiskService(JobConf conf) throws IOException {
     this(FileSystem.getLocal(conf), conf.getLocalDirs());
   }
-  
+
   /**
    * Execute the task sometime in the future, using ThreadPools.
    */
@@ -304,6 +304,24 @@ public class MRAsyncDiskService {
       result = result && moveAndDeleteRelativePath(volumes[i], pathName);
     }
     return result;
+  }
+
+  /**
+   * Move specified directories/files in each volume into TOBEDELETED, and then
+   * delete them.
+   * 
+   * @param dirsToDelete
+   * @throws IOException
+   */
+  public void cleanupDirsInAllVolumes(String[] dirsToDelete)
+      throws IOException {
+    for (int v = 0; v < volumes.length; v++) {
+      for (String entryName : dirsToDelete) {
+        if (!TOBEDELETED.equals(entryName)) {
+          moveAndDeleteRelativePath(volumes[v], entryName);
+        }
+      }
+    }
   }
 
   /**

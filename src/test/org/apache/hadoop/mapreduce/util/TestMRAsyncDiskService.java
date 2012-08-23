@@ -171,7 +171,7 @@ public class TestMRAsyncDiskService extends TestCase {
     String b = "b";
     String c = "b/c";
     String d = "d";
-    
+
     File fa = new File(vols[0], a);
     File fb = new File(vols[1], b);
     File fc = new File(vols[1], c);
@@ -216,11 +216,11 @@ public class TestMRAsyncDiskService extends TestCase {
 
   /**
    * This test creates some directories inside the volume roots, and then 
-   * call asyncDiskService.MoveAndDeleteAllVolumes.
+   * call asyncDiskService.cleanupAllVolumes.
    * We should be able to delete all files/dirs inside the volumes except
    * the toBeDeleted directory.
    */
-  public void testMRAsyncDiskServiceMoveAndDeleteAllVolumes() throws Throwable {
+  public void testMRAsyncDiskServiceCleanupAllVolumes() throws Throwable {
     FileSystem localFileSystem = FileSystem.getLocal(new Configuration());
     String[] vols = new String[]{TEST_ROOT_DIR + "/0",
         TEST_ROOT_DIR + "/1"};
@@ -258,6 +258,44 @@ public class TestMRAsyncDiskService extends TestCase {
     
     // Make sure everything is cleaned up
     makeSureCleanedUp(vols, service);
+  }
+
+  /**
+   * This test creates some directories inside the volume roots, and then call
+   * asyncDiskService.cleanupAllVolumes. We should be able to delete only those
+   * files/dirs that have been specified.
+   */
+  public void testCleanupDirsInAllVolumes() throws Throwable {
+    FileSystem localFileSystem = FileSystem.getLocal(new Configuration());
+    String[] vols = new String[] { TEST_ROOT_DIR + "/0", TEST_ROOT_DIR + "/1" };
+    MRAsyncDiskService service = new MRAsyncDiskService(localFileSystem, vols);
+
+    String a = "a";
+    String b = "b";
+
+    File fa0 = new File(vols[0], a);
+    File fa1 = new File(vols[1], a);
+    File fb0 = new File(vols[0], b);
+    File fb1 = new File(vols[1], b);
+
+    // Create the directories
+    fa0.mkdirs();
+    fa1.mkdirs();
+    fb0.mkdirs();
+    fb1.mkdirs();
+
+    assertTrue(fa0.exists());
+    assertTrue(fa1.exists());
+    assertTrue(fb0.exists());
+    assertTrue(fb1.exists());
+
+    // Delete all of them
+    service.cleanupDirsInAllVolumes(new String[] { a });
+
+    assertFalse(fa0.exists());
+    assertFalse(fa1.exists());
+    assertTrue(fb0.exists());
+    assertTrue(fb1.exists());
   }
   
   /**

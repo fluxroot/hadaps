@@ -85,6 +85,37 @@ public class TestTaskTrackerDirectories {
   }
   
   @Test
+  public void testCreatesAndDeletesRequiredDirs() throws Exception {
+    String[] dirs = new String[] {
+        TEST_DIR + "/local1",
+        TEST_DIR + "/local2"
+    };
+    
+    // Initialize configuration
+    Configuration conf = new Configuration();
+    conf.setStrings("mapred.local.dir", dirs);
+
+    // Start TaskTracker and check if dirs are created
+    TaskTracker tt = setupTaskTracker(conf);
+    for (String dir : TaskTracker.dirsToCleanup) {
+      checkDirExists(new Path(dirs[0], dir));
+      checkDirExists(new Path(dirs[1], dir));
+    }
+
+    // Shutdown TaskTracker and check if dirs are deleted
+    try {
+      tt.shutdown();
+    } catch (NullPointerException npe) {
+      // Ignore NullPointerException; this is not a full-fledged TaskTracker and
+      // few fields are null
+    }
+    for (String dir : TaskTracker.dirsToCleanup) {
+      checkDirDoesNotExist(new Path(dirs[0], dir));
+      checkDirDoesNotExist(new Path(dirs[1], dir));
+    }
+  }
+
+  @Test
   public void testCreatesLogDirs() throws Exception {
     String[] dirs = new String[] {
         TEST_DIR + "/local1",
@@ -121,7 +152,7 @@ public class TestTaskTrackerDirectories {
     checkDir(dir.getAbsolutePath());
   }
   
-  private void setupTaskTracker(Configuration conf) throws Exception {
+  private TaskTracker setupTaskTracker(Configuration conf) throws Exception {
     JobConf ttConf = new JobConf(conf);
     // Doesn't matter what we give here - we won't actually
     // connect to it.
@@ -137,6 +168,7 @@ public class TestTaskTrackerDirectories {
     tt.setLocalStorage(localStorage);
     tt.setLocalFileSystem(localFs);
     tt.initializeDirectories();
+    return tt;
   }
 
   private void checkDir(String dir) throws IOException {
@@ -146,5 +178,15 @@ public class TestTaskTrackerDirectories {
     FileStatus stat = fs.getFileStatus(new Path(dir));
     assertEquals(dir + " has correct permissions",
         0755, stat.getPermission().toShort());
+  }
+
+  private void checkDirExists(Path path) throws IOException {
+    File f = new File(path.toString());
+    assertTrue(path + " should exist", f.exists());
+  }
+
+  private void checkDirDoesNotExist(Path path) throws IOException {
+    File f = new File(path.toString());
+    assertFalse(path + " should not exist", f.exists());
   }
 }

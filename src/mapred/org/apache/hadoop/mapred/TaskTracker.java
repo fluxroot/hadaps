@@ -369,6 +369,8 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
 
   static final String JOB_LOCAL_DIR = "job.local.dir";
   static final String JOB_TOKEN_FILE="jobToken"; //localized file
+  static final String[] dirsToCleanup = new String[] { SUBDIR,
+      TT_PRIVATE_DIR, TT_LOG_TMP_DIR };
 
   private JobConf fConf;
   private JobConf originalConf;
@@ -833,7 +835,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     deleteUserDirectories(fConf);
 
     asyncDiskService = new MRAsyncDiskService(fConf);
-    asyncDiskService.cleanupAllVolumes();
+    asyncDiskService.cleanupDirsInAllVolumes(dirsToCleanup);
 
     final FsPermission ttdir = FsPermission.createImmutable((short) 0755);
     for (String s : localStorage.getDirs()) {
@@ -1077,12 +1079,13 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
         t, TaskTrackerInstrumentation.class);
   }
   
-  /** 
-   * Removes all contents of temporary storage.  Called upon 
-   * startup, to remove any leftovers from previous run.
-   *
+  /**
+   * Removes all contents of temporary storage. Called upon startup, to remove
+   * any leftovers from previous run.
+   * 
    * Use MRAsyncDiskService.moveAndDeleteAllVolumes instead.
-   * @see org.apache.hadoop.mapreduce.util.MRAsyncDiskService#cleanupAllVolumes()
+   * 
+   * @see org.apache.hadoop.mapreduce.util.MRAsyncDiskService#cleanupDirsInAllVolumes()
    */
   @Deprecated
   public void cleanupStorage() throws IOException {
@@ -1538,7 +1541,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
 
       // Clear local storage
       try {
-        asyncDiskService.cleanupAllVolumes();
+        asyncDiskService.cleanupDirsInAllVolumes(dirsToCleanup);
       } catch (Exception ioe) {
         LOG.warn("IOException shutting down TaskTracker", ioe);
       }
