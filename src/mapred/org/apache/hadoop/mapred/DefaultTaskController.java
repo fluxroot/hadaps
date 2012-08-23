@@ -131,8 +131,17 @@ public class DefaultTaskController extends TaskController {
         // from the shExec below.
         throw new IOException("Could not set permissions on " + p, ece);
       }
+      /*
+       * MAPREDUCE-2374: if another thread fork(2)ed a child process during the
+       * window when writeCommand (above) had taskjvm.sh open for write, that
+       * child process might still have a writeable fd open to the script.
+       *
+       * If we run the script with "bash -c /path/to/taskjvm.sh", then bash
+       * would try to execve(2) the script and get ETXTBSY.  Instead, just have
+       * bash interpret the script with "bash /path/to/taskjvm.sh".
+       */
       shExec = new ShellCommandExecutor(new String[]{
-          "bash", "-c", commandFile},
+          "bash", commandFile},
           currentWorkDirectory);
       shExec.execute();
     } catch (ExitCodeException ece) {
