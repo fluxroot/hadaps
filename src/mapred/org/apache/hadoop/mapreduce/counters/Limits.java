@@ -32,8 +32,11 @@ public class Limits {
       conf.getInt(COUNTER_NAME_MAX_KEY, COUNTER_NAME_MAX_DEFAULT);
   public static final int GROUPS_MAX =
       conf.getInt(COUNTER_GROUPS_MAX_KEY, COUNTER_GROUPS_MAX_DEFAULT);
+  // mapreduce.job.counters.limit is deprecated in favor of
+  // mapreduce.job.counters.max in Hadoop 2 so we support both here
   public static final int COUNTERS_MAX =
-      conf.getInt(COUNTERS_MAX_KEY, COUNTERS_MAX_DEFAULT);
+      conf.getInt(COUNTERS_MAX_KEY,
+        conf.getInt("mapreduce.job.counters.limit", COUNTERS_MAX_DEFAULT));
 
   private int totalCounters;
   private LimitExceededException firstViolation;
