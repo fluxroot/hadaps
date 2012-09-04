@@ -110,6 +110,7 @@ public class JobHistory {
  
   public static final int JOB_NAME_TRIM_LENGTH = 50;
   private static String JOBTRACKER_UNIQUE_STRING = null;
+  private static final String JOBHISTORY_DEBUG_MODE = "mapreduce.jobhistory.debug.mode";
   private static String LOG_DIR = null;
   private static final String SECONDARY_FILE_SUFFIX = ".recover";
   private static long jobHistoryBlockSize = 0;
@@ -130,7 +131,7 @@ public class JobHistory {
   static final String CONF_FILE_NAME_SUFFIX = "_conf.xml";
 
   // XXXXX debug mode -- set this to false for production
-  private static final boolean DEBUG_MODE = true;
+  private static boolean DEBUG_MODE;
 
   private static final int SERIAL_NUMBER_DIRECTORY_DIGITS = 6;
   private static final int SERIAL_NUMBER_LOW_DIGITS = DEBUG_MODE ? 1 : 3;
@@ -478,6 +479,7 @@ public class JobHistory {
    */
   public static void init(JobTracker jobTracker, JobConf conf,
              String hostname, long jobTrackerStartTime) throws IOException {
+    DEBUG_MODE = conf.getBoolean(JOBHISTORY_DEBUG_MODE, false);
     LOG_DIR = conf.get("hadoop.job.history.location" ,
       "file:///" + new File(
       System.getProperty("hadoop.log.dir")).getAbsolutePath()
