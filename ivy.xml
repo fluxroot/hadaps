@@ -117,7 +117,7 @@
    <dependency org="junit" name="junit" rev="${junit.version}"
                conf="test->default"/>
    <dependency org="org.mockito" name="mockito-all" rev="${mockito-all.version}" 
-               conf="test->default"/>
+               conf="common->default"/>
    <dependency org="org.vafer" name="jdeb" rev="${jdeb.version}" conf="package->master"/>
    <dependency org="org.mortbay.jetty" name="jetty-servlet-tester" rev="${jetty.version}"
                conf="test->default"/>
