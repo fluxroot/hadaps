@@ -473,7 +473,6 @@ public class JobClient extends Configured implements MRConstants, Tool  {
    * @throws IOException
    */
   public JobClient(JobConf conf) throws IOException {
-    setConf(conf);
     init(conf);
   }
   
@@ -494,6 +493,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
    * @throws IOException
    */
   public void init(JobConf conf) throws IOException {
+    setConf(conf);
     String tracker = conf.get("mapred.job.tracker", "local");
     tasklogtimeout = conf.getInt(
       TASKLOG_PULL_TIMEOUT_KEY, DEFAULT_TASKLOG_TIMEOUT);
@@ -566,6 +566,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
    */
   public JobClient(InetSocketAddress jobTrackAddr, 
                    Configuration conf) throws IOException {
+    setConf(conf);
     this.ugi = UserGroupInformation.getCurrentUser();
     jobSubmitClient = createRPCProxy(jobTrackAddr, conf);
   }
