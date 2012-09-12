@@ -102,7 +102,7 @@ public class TestJobTrackerRestart {
   @Test
   public void testRestartWithoutRecovery(MiniDFSCluster dfs, 
                                          MiniMRCluster mr) 
-  throws IOException {
+  throws Exception {
     // III. Test a job with waiting mapper and recovery turned off
     
     FileSystem fileSys = dfs.getFileSystem();
@@ -197,7 +197,7 @@ public class TestJobTrackerRestart {
   @Test
   public void testTaskEventsAndReportsWithRecovery(MiniDFSCluster dfs, 
                                                    MiniMRCluster mr) 
-  throws IOException {
+  throws Exception {
     // II. Test a tasktracker with waiting mapper and recovery turned on.
     //     Ideally the tracker should SYNC with the new/restarted jobtracker
     
@@ -412,7 +412,7 @@ public class TestJobTrackerRestart {
   @Test
   public void testJobRecoveryWithEmptyHistory(MiniDFSCluster dfs, 
                                               MiniMRCluster mr) 
-  throws IOException {
+  throws Exception {
     mr.startTaskTracker(null, null, 1, 1);
     FileSystem fileSys = dfs.getFileSystem();
     
@@ -502,7 +502,7 @@ public class TestJobTrackerRestart {
   }
   
   @Test
-  public void testJobTrackerRestart() throws IOException {
+  public void testJobTrackerRestart() throws Exception {
     String namenode = null;
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
@@ -577,7 +577,7 @@ public class TestJobTrackerRestart {
     return (new Path(dir, "jt-restart-reduce-signal")).toString();
   }
   
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     new TestJobTrackerRestart().testJobTrackerRestart();
   }
 }

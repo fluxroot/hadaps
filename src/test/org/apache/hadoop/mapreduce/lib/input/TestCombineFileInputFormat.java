@@ -20,6 +20,7 @@ package org.apache.hadoop.mapreduce.lib.input;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.TimeoutException;
 
 import junit.framework.TestCase;
 
@@ -240,7 +241,7 @@ public class TestCombineFileInputFormat extends TestCase {
     assertFalse(rr.nextKeyValue());
   }
 
-  public void testSplitPlacement() throws IOException {
+  public void testSplitPlacement() throws Exception {
     MiniDFSCluster dfs = null;
     FileSystem fileSys = null;
     try {
@@ -605,7 +606,8 @@ public class TestCombineFileInputFormat extends TestCase {
   }
 
   static void writeFile(Configuration conf, Path name,
-      short replication, int numBlocks) throws IOException {
+      short replication, int numBlocks)
+      throws IOException, TimeoutException, InterruptedException {
     FileSystem fileSys = FileSystem.get(conf);
 
     FSDataOutputStream stm = fileSys.create(name, true,

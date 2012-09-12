@@ -56,7 +56,7 @@ public class TestTrackerBlacklistAcrossJobs extends TestCase {
     }
   }
   
-  public void testBlacklistAcrossJobs() throws IOException {
+  public void testBlacklistAcrossJobs() throws Exception {
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
     FileSystem fileSys = null;

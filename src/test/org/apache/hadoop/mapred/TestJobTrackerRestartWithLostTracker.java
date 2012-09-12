@@ -48,7 +48,7 @@ public class TestJobTrackerRestartWithLostTracker extends TestCase {
   
   public void testRecoveryWithLostTracker(MiniDFSCluster dfs,
                                           MiniMRCluster mr) 
-  throws IOException {
+  throws Exception {
     FileSystem fileSys = dfs.getFileSystem();
     JobConf jobConf = mr.createJobConf();
     int numMaps = 2;
@@ -115,7 +115,7 @@ public class TestJobTrackerRestartWithLostTracker extends TestCase {
     assertTrue("Job should be successful", rJob.isSuccessful());
   }
   
-  public void testRestartWithLostTracker() throws IOException {
+  public void testRestartWithLostTracker() throws Exception {
     String namenode = null;
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
@@ -172,7 +172,7 @@ public class TestJobTrackerRestartWithLostTracker extends TestCase {
     }
   }
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     new TestJobTrackerRestartWithLostTracker().testRestartWithLostTracker();
   }
 }

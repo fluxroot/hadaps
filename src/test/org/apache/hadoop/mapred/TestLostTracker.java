@@ -44,7 +44,7 @@ public class TestLostTracker extends TestCase {
   
   public void testLostTracker(MiniDFSCluster dfs,
                               MiniMRCluster mr) 
-  throws IOException {
+  throws Exception {
     FileSystem fileSys = dfs.getFileSystem();
     JobConf jobConf = mr.createJobConf();
     int numMaps = 10;
@@ -141,7 +141,7 @@ public class TestLostTracker extends TestCase {
     }
   }
 
-  public void testLostTracker() throws IOException {
+  public void testLostTracker() throws Exception {
     String namenode = null;
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
@@ -195,7 +195,7 @@ public class TestLostTracker extends TestCase {
     }
   }
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws Exception {
     new TestLostTracker().testLostTracker();
   }
 }

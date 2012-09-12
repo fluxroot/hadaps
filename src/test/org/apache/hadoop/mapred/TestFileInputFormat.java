@@ -19,6 +19,7 @@ package org.apache.hadoop.mapred;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import junit.framework.TestCase;
 
@@ -86,7 +87,7 @@ public class TestFileInputFormat extends TestCase {
   }
 
   private void createInputs(FileSystem fs, Path inDir, String fileName) 
-  throws IOException {
+      throws IOException, TimeoutException, InterruptedException {
     // create a multi-block file on hdfs
     DataOutputStream out = fs.create(new Path(inDir, fileName), true, 4096, 
                                      (short) 2, 512, null);

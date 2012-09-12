@@ -62,7 +62,7 @@ public class TestJobInProgressListener extends TestCase {
    *   - check if the queue looks ok
    *   
    */
-  public void testJobQueueChanges() throws IOException {
+  public void testJobQueueChanges() throws Exception {
     LOG.info("Testing job queue changes");
     JobConf conf = new JobConf();
     MiniDFSCluster dfs = new MiniDFSCluster(conf, 1, true, null, null);

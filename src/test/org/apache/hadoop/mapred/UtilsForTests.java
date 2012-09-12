@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Enumeration;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
@@ -499,11 +500,15 @@ public class UtilsForTests {
   static void signalTasks(MiniDFSCluster dfs, FileSystem fileSys, 
                           String mapSignalFile, 
                           String reduceSignalFile, int replication) 
-  throws IOException {
-    writeFile(dfs.getNameNode(), fileSys.getConf(), new Path(mapSignalFile), 
-              (short)replication);
-    writeFile(dfs.getNameNode(), fileSys.getConf(), new Path(reduceSignalFile), 
-              (short)replication);
+  throws IOException, TimeoutException {
+    try {
+      writeFile(dfs.getNameNode(), fileSys.getConf(), new Path(mapSignalFile), 
+                (short)replication);
+      writeFile(dfs.getNameNode(), fileSys.getConf(), new Path(reduceSignalFile), 
+                (short)replication);
+    } catch (InterruptedException ie) {
+      // Ignore
+    }
   }
   
   /**
@@ -512,12 +517,16 @@ public class UtilsForTests {
   static void signalTasks(MiniDFSCluster dfs, FileSystem fileSys, 
                           boolean isMap, String mapSignalFile, 
                           String reduceSignalFile)
-  throws IOException {
-    //  signal the maps to complete
-    writeFile(dfs.getNameNode(), fileSys.getConf(),
-              isMap 
-              ? new Path(mapSignalFile)
-              : new Path(reduceSignalFile), (short)1);
+  throws IOException, TimeoutException {
+    try {
+      //  signal the maps to complete
+      writeFile(dfs.getNameNode(), fileSys.getConf(),
+                isMap 
+                ? new Path(mapSignalFile)
+                : new Path(reduceSignalFile), (short)1);
+    } catch (InterruptedException ie) {
+      // Ignore
+    }
   }
   
   static String getSignalFile(Path dir) {
@@ -533,7 +542,8 @@ public class UtilsForTests {
   }
   
   static void writeFile(NameNode namenode, Configuration conf, Path name, 
-      short replication) throws IOException {
+                        short replication)
+      throws IOException, TimeoutException, InterruptedException {
     FileSystem fileSys = FileSystem.get(conf);
     SequenceFile.Writer writer = 
       SequenceFile.createWriter(fileSys, conf, name, 

@@ -18,6 +18,7 @@
 package org.apache.hadoop.mapred.lib;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import junit.framework.TestCase;
 
@@ -79,7 +80,7 @@ public class TestCombineFileInputFormat extends TestCase{
     }
   }
 
-  public void testSplitPlacement() throws IOException {
+  public void testSplitPlacement() throws Exception {
     String namenode = null;
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
@@ -438,7 +439,8 @@ public class TestCombineFileInputFormat extends TestCase{
   }
 
   static void writeFile(Configuration conf, Path name,
-      short replication, int numBlocks) throws IOException {
+      short replication, int numBlocks)
+      throws IOException, TimeoutException, InterruptedException {
     FileSystem fileSys = FileSystem.get(conf);
 
     FSDataOutputStream stm = fileSys.create(name, true,

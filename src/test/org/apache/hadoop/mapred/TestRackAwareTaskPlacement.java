@@ -87,7 +87,7 @@ public class TestRackAwareTaskPlacement extends TestCase {
     mr.shutdown();
   }
 
-  public void testTaskPlacement() throws IOException {
+  public void testTaskPlacement() throws Exception {
     String namenode = null;
     MiniDFSCluster dfs = null;
     MiniMRCluster mr = null;
