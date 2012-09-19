@@ -466,6 +466,9 @@ public abstract class CombineFileInputFormat<K, V>
       if (locations == null) {
         blocks = new OneBlockInfo[0];
       } else {
+        if(locations.length == 0) {
+          locations = new BlockLocation[] { new BlockLocation() };
+        }
         blocks = new OneBlockInfo[locations.length];
         for (int i = 0; i < locations.length; i++) {
            

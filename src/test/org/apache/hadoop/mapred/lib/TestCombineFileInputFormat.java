@@ -33,6 +33,7 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Reporter;
@@ -451,6 +452,30 @@ public class TestCombineFileInputFormat extends TestCase{
     }
     stm.close();
     DFSTestUtil.waitReplication(fileSys, name, replication);
+  }
+  
+  public void testForEmptyFile() throws Exception {
+    Configuration conf = new Configuration();
+    FileSystem fileSys = FileSystem.get(conf);
+    Path file = new Path("test" + "/file");
+    FSDataOutputStream out = fileSys.create(file, true,
+        conf.getInt("io.file.buffer.size", 4096), (short) 1, (long) BLOCKSIZE);
+    out.write(new byte[0]);
+    out.close();
+
+    // split it using a CombinedFile input format
+    DummyInputFormat inFormat = new DummyInputFormat();
+    JobConf job = new JobConf(conf);
+    FileInputFormat.setInputPaths(job, "test");
+    InputSplit[] splits = inFormat.getSplits(job, /*ignored*/ 7);
+    assertEquals(1, splits.length);
+    CombineFileSplit fileSplit = (CombineFileSplit) splits[0];
+    assertEquals(1, fileSplit.getNumPaths());
+    assertEquals(file.getName(), fileSplit.getPath(0).getName());
+    assertEquals(0, fileSplit.getOffset(0));
+    assertEquals(0, fileSplit.getLength(0));
+
+    fileSys.delete(file.getParent(), true);
   }
 
   static class TestFilter implements PathFilter {
