@@ -18,14 +18,18 @@
 package org.apache.hadoop.mapred.lib;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.HdfsBlockLocation;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -66,6 +70,7 @@ public class TestCombineFileInputFormat extends TestCase{
   final Path dir2 = new Path(inDir, "/dir2");
   final Path dir3 = new Path(inDir, "/dir3");
   final Path dir4 = new Path(inDir, "/dir4");
+  final Path dir5 = new Path(inDir, "/dir5");
 
   static final int BLOCKSIZE = 1024;
   static final byte[] databuf = new byte[BLOCKSIZE];
@@ -78,6 +83,41 @@ public class TestCombineFileInputFormat extends TestCase{
     public RecordReader<Text,Text> getRecordReader(InputSplit split, JobConf job
         , Reporter reporter) throws IOException {
       return null;
+    }
+  }
+
+  /** Dummy class to extend CombineFileInputFormat. It allows
+   * testing with files having missing blocks without actually removing replicas.
+   */
+  public static class MissingBlockFileSystem extends DistributedFileSystem {
+    String fileWithMissingBlocks;
+
+    @Override
+    public void initialize(URI name, Configuration conf) throws IOException {
+      fileWithMissingBlocks = "";
+      super.initialize(name, conf);
+    }
+
+    @Override
+    public BlockLocation[] getFileBlockLocations(
+        FileStatus stat, long start, long len) throws IOException {
+      if (stat.isDir()) {
+        return null;
+      }
+      System.out.println("File " + stat.getPath());
+      String name = stat.getPath().toUri().getPath();
+      BlockLocation[] locs =
+        super.getFileBlockLocations(stat, start, len);
+      if (name.equals(fileWithMissingBlocks)) {
+        System.out.println("Returning missing blocks for " + fileWithMissingBlocks);
+        locs[0] = new HdfsBlockLocation(new BlockLocation(new String[0],
+            new String[0], locs[0].getOffset(), locs[0].getLength()), null);
+      }
+      return locs;
+    }
+
+    public void setFileWithMissingBlocks(String f) {
+      fileWithMissingBlocks = f;
     }
   }
 
@@ -452,6 +492,64 @@ public class TestCombineFileInputFormat extends TestCase{
     }
     stm.close();
     DFSTestUtil.waitReplication(fileSys, name, replication);
+  }
+  
+  /**
+   * Test that CFIF can handle missing blocks.
+   */
+  public void testMissingBlocks() throws Exception {
+    String namenode = null;
+    MiniDFSCluster dfs = null;
+    FileSystem fileSys = null;
+    String testName = "testMissingBlocks";
+    try {
+      Configuration conf = new Configuration();
+      conf.set("fs.hdfs.impl", MissingBlockFileSystem.class.getName());
+      conf.setBoolean("dfs.replication.considerLoad", false);
+      dfs = new MiniDFSCluster(conf, 1, true, rack1, hosts1);
+      dfs.waitActive();
+
+      namenode = (dfs.getFileSystem()).getUri().getHost() + ":" +
+                 (dfs.getFileSystem()).getUri().getPort();
+
+      fileSys = dfs.getFileSystem();
+      if (!fileSys.mkdirs(inDir)) {
+        throw new IOException("Mkdirs failed to create " + inDir.toString());
+      }
+
+      Path file1 = new Path(dir1 + "/file1");
+      writeFile(conf, file1, (short)1, 1);
+      // create another file on the same datanode
+      Path file5 = new Path(dir5 + "/file5");
+      writeFile(conf, file5, (short)1, 1);
+
+      ((MissingBlockFileSystem)fileSys).setFileWithMissingBlocks(file1.toUri().getPath());
+      // split it using a CombinedFile input format
+      DummyInputFormat inFormat = new DummyInputFormat();
+      JobConf job = new JobConf(conf);
+      FileInputFormat.setInputPaths(job, dir1 + "," + dir5);
+      InputSplit[] splits = inFormat.getSplits(job, /*ignored*/ 7);
+      System.out.println("Made splits(Test0): " + splits.length);
+      for (InputSplit split : splits) {
+        System.out.println("File split(Test0): " + split);
+      }
+      assertEquals(1, splits.length);
+      CombineFileSplit fileSplit = (CombineFileSplit) splits[0];
+      assertEquals(2, fileSplit.getNumPaths());
+      assertEquals(1, fileSplit.getLocations().length);
+      assertEquals(file1.getName(), fileSplit.getPath(0).getName());
+      assertEquals(0, fileSplit.getOffset(0));
+      assertEquals(BLOCKSIZE, fileSplit.getLength(0));
+      assertEquals(file5.getName(), fileSplit.getPath(1).getName());
+      assertEquals(0, fileSplit.getOffset(1));
+      assertEquals(BLOCKSIZE, fileSplit.getLength(1));
+      assertEquals(hosts1[0], fileSplit.getLocations()[0]);
+
+    } finally {
+      if (dfs != null) {
+        dfs.shutdown();
+      }
+    }
   }
   
   public void testForEmptyFile() throws Exception {
