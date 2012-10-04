@@ -126,7 +126,13 @@
                conf="compile->default"/>
    <dependency org="org.aspectj" name="aspectjtools" rev="${aspectj.version}"
                conf="compile->default"/>
-
+   <dependency org="org.apache.zookeeper" name="zookeeper" rev="${zookeeper.version}"
+               conf="compile->default"/>
+   <dependency org="org.apache.zookeeper" name="zookeeper" rev="${zookeeper.version}"
+               conf="test->default">
+     <artifact name="zookeeper" type="test-jar" ext="jar" m:classifier="tests"/>
+   </dependency>
+   
    <!-- Exclusions for transitive dependencies pulled in by log4j -->
    <exclude org="com.sun.jdmk"/>
    <exclude org="com.sun.jmx"/>

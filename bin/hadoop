@@ -73,6 +73,9 @@ if [ $# = 0 ]; then
   echo "  balancer             run a cluster balancing utility"
   echo "  fetchdt              fetch a delegation token from the NameNode"
   echo "  jobtracker           run the MapReduce job Tracker node" 
+  echo "  jobtrackerhadaemon   run the Job Tracker HA daemon"
+  echo "  mrhaadmin            run a MapReduce HA admin client" 
+  echo "  mrzkfc               run the MapReduce ZK Failover Controller daemon" 
   echo "  pipes                run a Pipes job"
   echo "  tasktracker          run a MapReduce task Tracker node" 
   echo "  job                  manipulate MapReduce jobs"
@@ -241,6 +244,15 @@ elif [ "$COMMAND" = "fetchdt" ] ; then
 elif [ "$COMMAND" = "jobtracker" ] ; then
   CLASS=org.apache.hadoop.mapred.JobTracker
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_JOBTRACKER_OPTS"
+elif [ "$COMMAND" = "jobtrackerhadaemon" ] ; then
+  CLASS=org.apache.hadoop.mapred.JobTrackerHADaemon
+  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_JOBTRACKER_OPTS"
+elif [ "$COMMAND" = "mrhaadmin" ] ; then
+  CLASS=org.apache.hadoop.mapred.tools.MRHAAdmin
+  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
+elif [ "$COMMAND" = "mrzkfc" ] ; then
+  CLASS=org.apache.hadoop.mapred.tools.MRZKFailoverController
+  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_MRZKFC_OPTS"
 elif [ "$COMMAND" = "tasktracker" ] ; then
   CLASS=org.apache.hadoop.mapred.TaskTracker
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_TASKTRACKER_OPTS"

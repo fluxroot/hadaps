@@ -294,6 +294,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public float mapProgress() throws IOException {
       ensureFreshStatus();
+      if (status == null) {
+        return 0.0f;
+      }
       return status.mapProgress();
     }
 
@@ -303,6 +306,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public float reduceProgress() throws IOException {
       ensureFreshStatus();
+      if (status == null) {
+        return 0.0f;
+      }
       return status.reduceProgress();
     }
 
@@ -312,6 +318,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public float cleanupProgress() throws IOException {
       ensureFreshStatus();
+      if (status == null) {
+        return 0.0f;
+      }
       return status.cleanupProgress();
     }
 
@@ -321,6 +330,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public float setupProgress() throws IOException {
       ensureFreshStatus();
+      if (status == null) {
+        return 0.0f;
+      }
       return status.setupProgress();
     }
 
@@ -329,6 +341,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public synchronized boolean isComplete() throws IOException {
       updateStatus();
+      if (status == null) {
+        return false;
+      }
       return (status.getRunState() == JobStatus.SUCCEEDED ||
               status.getRunState() == JobStatus.FAILED ||
               status.getRunState() == JobStatus.KILLED);
@@ -339,6 +354,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public synchronized boolean isSuccessful() throws IOException {
       updateStatus();
+      if (status == null) {
+        return false;
+      }
       return status.getRunState() == JobStatus.SUCCEEDED;
     }
 
@@ -359,6 +377,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
      */
     public synchronized int getJobState() throws IOException {
       updateStatus();
+      if (status == null) {
+        return 0; // UNKNOWN
+      }
       return status.getRunState();
     }
     
@@ -415,8 +436,8 @@ public class JobClient extends Configured implements MRConstants, Tool  {
       return "Job: " + profile.getJobID() + "\n" + 
         "file: " + profile.getJobFile() + "\n" + 
         "tracking URL: " + profile.getURL() + "\n" + 
-        "map() completion: " + status.mapProgress() + "\n" + 
-        "reduce() completion: " + status.reduceProgress();
+        "map() completion: " + (status == null ? 0.0f : status.mapProgress()) + "\n" + 
+        "reduce() completion: " + (status == null ? 0.0f : status.reduceProgress());
     }
         
     /**
@@ -437,6 +458,9 @@ public class JobClient extends Configured implements MRConstants, Tool  {
       //we realized the job failed. SO we try avoiding 
       //a rpc by not calling updateStatus
       ensureFreshStatus();
+      if (status == null) {
+        return "NA";
+      }
       return status.getFailureInfo();
     }
 
@@ -501,8 +525,10 @@ public class JobClient extends Configured implements MRConstants, Tool  {
     if ("local".equals(tracker)) {
       conf.setNumMapTasks(1);
       this.jobSubmitClient = new LocalJobRunner(conf);
-    } else {
+    } else if (!HAUtil.isHAEnabled(conf, tracker)) {
       this.jobSubmitClient = createRPCProxy(JobTracker.getAddress(conf), conf);
+    } else {
+      this.jobSubmitClient = createRPCProxy(tracker, conf);
     }        
 
     // Read progress monitor poll interval from config. Default is 1 second.
@@ -521,6 +547,12 @@ public class JobClient extends Configured implements MRConstants, Tool  {
         JobSubmissionProtocol.versionID, addr, 
         UserGroupInformation.getCurrentUser(), conf,
         NetUtils.getSocketFactory(conf, JobSubmissionProtocol.class));
+  }
+
+  private static JobSubmissionProtocol createRPCProxy(String addr,
+      Configuration conf) throws IOException {
+    return JobTrackerProxies.createProxy(conf, addr,
+        JobSubmissionProtocol.class).getProxy();
   }
 
   @InterfaceAudience.Private

@@ -20,6 +20,7 @@ package org.apache.hadoop.mapred;
 
 import java.io.IOException;
 
+import org.apache.hadoop.io.retry.Idempotent;
 import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.security.KerberosInfo;
@@ -104,6 +105,7 @@ interface InterTrackerProtocol extends VersionedProtocol {
    * @return a {@link org.apache.hadoop.mapred.HeartbeatResponse} with 
    *         fresh instructions.
    */
+  @Idempotent
   HeartbeatResponse heartbeat(TaskTrackerStatus status, 
                               boolean restarted, 
                               boolean initialContact,
@@ -115,6 +117,7 @@ interface InterTrackerProtocol extends VersionedProtocol {
    * The task tracker calls this once, to discern where it can find
    * files referred to by the JobTracker
    */
+  @Idempotent
   public String getFilesystemName() throws IOException;
 
   /**
@@ -125,6 +128,7 @@ interface InterTrackerProtocol extends VersionedProtocol {
    * @throws IOException if there was a problem in communication or on the
    *                     remote side
    */
+  @Idempotent
   public void reportTaskTrackerError(String taskTracker,
                                      String errorClass,
                                      String errorMessage) throws IOException;
@@ -137,6 +141,7 @@ interface InterTrackerProtocol extends VersionedProtocol {
    * @return array of task completion events. 
    * @throws IOException
    */
+  @Idempotent
   TaskCompletionEvent[] getTaskCompletionEvents(JobID jobid, int fromEventId
       , int maxEvents) throws IOException;
 
@@ -145,15 +150,18 @@ interface InterTrackerProtocol extends VersionedProtocol {
    * 
    * @return the system directory where job-specific files are to be placed.
    */
+  @Idempotent
   public String getSystemDir();
   
   /**
    * Returns the VersionInfo build version of the JobTracker 
    */
+  @Idempotent
   public String getBuildVersion() throws IOException;
 
   /**
    * Returns the VersionInfo version of the JobTracker
    */
+  @Idempotent
   public String getVIVersion() throws IOException;
 }

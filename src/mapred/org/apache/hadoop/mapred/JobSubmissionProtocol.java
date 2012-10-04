@@ -21,6 +21,7 @@ package org.apache.hadoop.mapred;
 import java.io.IOException;
 
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.retry.Idempotent;
 import org.apache.hadoop.ipc.VersionedProtocol;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenSelector;
@@ -105,6 +106,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @param detailed if true then report tracker names and memory usage
    * @return summary of the state of the cluster
    */
+  @Idempotent
   public ClusterStatus getClusterStatus(boolean detailed) throws IOException;
 
   /**
@@ -115,6 +117,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    *         submitted to
    * @throws IOException
    */
+  @Idempotent
   public AccessControlList getQueueAdmins(String queueName) throws IOException;
 
   /**
@@ -141,37 +144,44 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * Grab a handle to a job that is already known to the JobTracker.
    * @return Profile of the job, or null if not found. 
    */
+  @Idempotent
   public JobProfile getJobProfile(JobID jobid) throws IOException;
 
   /**
    * Grab a handle to a job that is already known to the JobTracker.
    * @return Status of the job, or null if not found.
    */
+  @Idempotent
   public JobStatus getJobStatus(JobID jobid) throws IOException;
 
   /**
    * Grab the current job counters
    */
+  @Idempotent
   public Counters getJobCounters(JobID jobid) throws IOException;
     
   /**
    * Grab a bunch of info on the map tasks that make up the job
    */
+  @Idempotent
   public TaskReport[] getMapTaskReports(JobID jobid) throws IOException;
 
   /**
    * Grab a bunch of info on the reduce tasks that make up the job
    */
+  @Idempotent
   public TaskReport[] getReduceTaskReports(JobID jobid) throws IOException;
 
   /**
    * Grab a bunch of info on the cleanup tasks that make up the job
    */
+  @Idempotent
   public TaskReport[] getCleanupTaskReports(JobID jobid) throws IOException;
 
   /**
    * Grab a bunch of info on the setup tasks that make up the job
    */
+  @Idempotent
   public TaskReport[] getSetupTaskReports(JobID jobid) throws IOException;
 
   /**
@@ -180,6 +190,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * if dfs).  The client can then copy files into the right locations 
    * prior to submitting the job.
    */
+  @Idempotent
   public String getFilesystemName() throws IOException;
 
   /** 
@@ -187,12 +198,14 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return array of JobStatus for the running/to-be-run
    * jobs.
    */
+  @Idempotent
   public JobStatus[] jobsToComplete() throws IOException;
     
   /** 
    * Get all the jobs submitted. 
    * @return array of JobStatus for the submitted jobs
    */
+  @Idempotent
   public JobStatus[] getAllJobs() throws IOException;
   
   /**
@@ -204,6 +217,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return array of task completion events. 
    * @throws IOException
    */
+  @Idempotent
   public TaskCompletionEvent[] getTaskCompletionEvents(JobID jobid
       , int fromEventId, int maxEvents) throws IOException;
     
@@ -212,6 +226,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @param taskId the id of the task
    * @return an array of the diagnostic messages
    */
+  @Idempotent
   public String[] getTaskDiagnostics(TaskAttemptID taskId) 
   throws IOException;
 
@@ -220,6 +235,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * 
    * @return the system directory where job-specific files are to be placed.
    */
+  @Idempotent
   public String getSystemDir();  
   
   /**
@@ -228,6 +244,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * 
    * @return the directory where job-specific files are to be placed.
    */
+  @Idempotent
   public String getStagingAreaDir() throws IOException;
   
   /**
@@ -236,6 +253,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return Array of the Job Queue Information Object
    * @throws IOException 
    */
+  @Idempotent
   public JobQueueInfo[] getQueues() throws IOException;
   
   /**
@@ -245,6 +263,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return Scheduling Information of the Queue
    * @throws IOException 
    */
+  @Idempotent
   public JobQueueInfo getQueueInfo(String queue) throws IOException;
   
   /**
@@ -253,6 +272,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return array of JobStatus for the submitted jobs
    * @throws IOException
    */
+  @Idempotent
   public JobStatus[] getJobsFromQueue(String queue) throws IOException;
   
   /**
@@ -260,6 +280,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return array of QueueAclsInfo object for current user.
    * @throws IOException
    */
+  @Idempotent
   public QueueAclsInfo[] getQueueAclsForCurrentUser() throws IOException;
   
   /**
@@ -270,6 +291,7 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @throws IOException
    * @throws InterruptedException
    */ 
+  @Idempotent
   public 
   Token<DelegationTokenIdentifier> getDelegationToken(Text renewer
                                                       ) throws IOException,

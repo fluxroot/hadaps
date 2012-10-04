@@ -17,6 +17,9 @@
  */
 package org.apache.hadoop.mapred;
 
+import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.ha.HAServiceProtocol;
+import org.apache.hadoop.ha.ZKFCProtocol;
 import org.apache.hadoop.mr1security.RefreshUserMappingsProtocol;
 import org.apache.hadoop.security.authorize.PolicyProvider;
 import org.apache.hadoop.security.authorize.RefreshAuthorizationPolicyProtocol;
@@ -43,6 +46,10 @@ public class MapReducePolicyProvider extends PolicyProvider {
                   AdminOperationsProtocol.class),
       new Service("security.get.user.mappings.protocol.acl",
                   GetUserMappingsProtocol.class),
+      new Service(CommonConfigurationKeys.SECURITY_HA_SERVICE_PROTOCOL_ACL,
+          HAServiceProtocol.class),
+      new Service(CommonConfigurationKeys.SECURITY_ZKFC_PROTOCOL_ACL,
+          ZKFCProtocol.class),
   };
   
   @Override

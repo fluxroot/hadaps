@@ -109,6 +109,13 @@ public class TaskLog {
     String strAttemptLogDir = getTaskAttemptLogDir(taskID, 
         cleanupSuffix, localDirs);
     File attemptLogDir = new File(strAttemptLogDir);
+    if (attemptLogDir.exists()) {
+      // Delete attempt log dir if it already exists on this TT and we are doing
+      // job recovery
+      if (!FileUtil.fullyDelete(attemptLogDir)) {
+        throw new IOException("Deletion of existing " + attemptLogDir + " failed.");
+      }
+    }
     if (!attemptLogDir.mkdirs()) {
       throw new IOException("Creation of " + attemptLogDir + " failed.");
     }

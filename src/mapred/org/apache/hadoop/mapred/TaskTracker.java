@@ -288,7 +288,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
   private LocalDirAllocator localDirAllocator;
   String taskTrackerName;
   String localHostname;
-  InetSocketAddress jobTrackAddr;
+  String jobTrackAddr;
     
   InetSocketAddress taskReportAddress;
 
@@ -1000,15 +1000,20 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
         new TrackerDistributedCacheManager(this.fConf, taskController, asyncDiskService);
     this.distributedCacheManager.purgeCache(); // TODO(todd) purge here?
 
-    this.jobClient = (InterTrackerProtocol) 
-    UserGroupInformation.getLoginUser().doAs(
-        new PrivilegedExceptionAction<Object>() {
-      public Object run() throws IOException {
-        return RPC.waitForProxy(InterTrackerProtocol.class,
-            InterTrackerProtocol.versionID,
-            jobTrackAddr, fConf);
-      }
-    });
+    if (!HAUtil.isHAEnabled(fConf, jobTrackAddr)) {
+      this.jobClient = (InterTrackerProtocol) 
+      UserGroupInformation.getLoginUser().doAs(
+          new PrivilegedExceptionAction<Object>() {
+        public Object run() throws IOException {
+          return RPC.waitForProxy(InterTrackerProtocol.class,
+              InterTrackerProtocol.versionID,
+              NetUtils.createSocketAddr(jobTrackAddr), fConf);
+        }
+      });
+    } else {
+      this.jobClient = JobTrackerProxies.createProxy(fConf, 
+            jobTrackAddr, InterTrackerProtocol.class).getProxy();
+    }
     this.justInited = true;
     this.running = true;    
     // start the thread that will fetch map task completion events
@@ -1676,7 +1681,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
     diskHealthCheckInterval = conf.getLong(DISK_HEALTH_CHECK_INTERVAL_PROPERTY,
                                            DEFAULT_DISK_HEALTH_CHECK_INTERVAL);
     aclsManager = new ACLsManager(conf, new JobACLsManager(conf), null);
-    this.jobTrackAddr = JobTracker.getAddress(conf);
+    this.jobTrackAddr = conf.get("mapred.job.tracker", "localhost:8012");
     String infoAddr = 
       NetUtils2.getServerAddress(conf,
                                 "tasktracker.http.bindAddress", 
@@ -2080,7 +2085,7 @@ public class TaskTracker implements MRConstants, TaskUmbilicalProtocol,
                                        maxReduceSlots); 
       }
     } else {
-      LOG.info("Resending 'status' to '" + jobTrackAddr.getHostName() +
+      LOG.info("Resending 'status' to '" + jobTrackAddr +
                "' with reponseId '" + heartbeatResponseId);
     }
       
