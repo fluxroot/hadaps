@@ -37,7 +37,6 @@ import org.apache.hadoop.io.FileBench;
 import org.apache.hadoop.io.TestArrayFile;
 import org.apache.hadoop.io.TestSequenceFile;
 import org.apache.hadoop.io.TestSetFile;
-import org.apache.hadoop.ipc.TestIPC;
 import org.apache.hadoop.ipc.TestRPC;
 import org.apache.hadoop.mapred.ThreadedMapBenchmark;
 
@@ -60,7 +59,6 @@ public class AllTestDriver {
       pgd.addClass("testsetfile", TestSetFile.class, "A test for flat files of binary key/value pairs.");
       pgd.addClass("testarrayfile", TestArrayFile.class, "A test for flat files of binary key/value pairs.");
       pgd.addClass("testrpc", TestRPC.class, "A test for rpc.");
-      pgd.addClass("testipc", TestIPC.class, "A test for ipc.");
       pgd.addClass("testsequencefileinputformat", TestSequenceFileInputFormat.class, "A test for sequence file input format.");
       pgd.addClass("testtextinputformat", TestTextInputFormat.class, "A test for text input format.");
       pgd.addClass("TestDFSIO", TestDFSIO.class, "Distributed i/o benchmark.");
