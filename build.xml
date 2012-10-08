@@ -1271,12 +1271,16 @@
     <chmod perm="ugo+x" type="file">
         <fileset dir="${dist.dir}/src/c++/pipes/debug"/>
     </chmod>
-    <chmod perm="ugo+x" type="file">
-        <fileset dir="${dist.dir}/c++/">
-          <include name="*/bin/*" />
-        </fileset>
-    </chmod>
-
+    <if>
+      <istrue value="${compile.c++}"/>
+      <then>
+        <chmod perm="ugo+x" type="file">
+            <fileset dir="${dist.dir}/c++/">
+              <include name="*/bin/*" />
+            </fileset>
+        </chmod>
+      </then>
+    </if>
   </target>
 
   <!-- ================================================================== -->
@@ -1398,9 +1402,14 @@
       <fileset dir="cloudera" />
     </copy>
 
-    <copy todir="${dist.dir}/c++" includeEmptyDirs="false">
-      <fileset dir="${build.dir}/c++-examples"/>
-    </copy>
+    <if>
+      <istrue value="${compile.c++}"/>
+      <then>
+        <copy todir="${dist.dir}/c++" includeEmptyDirs="false">
+          <fileset dir="${build.dir}/c++-examples"/>
+        </copy>
+      </then>
+    </if>
     <!-- END CLOUDERA HOOKS -->
 
     <copy todir="${dist.dir}/.eclipse.templates">
