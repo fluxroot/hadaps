@@ -28,6 +28,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -262,6 +265,55 @@ public class FairScheduler extends TaskScheduler {
       MetricsContext context = MetricsUtil.getContext("fairscheduler");
       context.unregisterUpdater(metricsUpdater);
       metricsUpdater = null;
+    }
+  }
+
+  private class JobInitializer {
+    private final int DEFAULT_NUM_THREADS = 1;
+    private ThreadPoolExecutor threadPool;
+    private TaskTrackerManager ttm;
+    public JobInitializer(Configuration conf, TaskTrackerManager ttm) {
+      int numThreads = conf.getInt("mapred.jobinit.threads",
+          DEFAULT_NUM_THREADS);
+      threadPool = new ThreadPoolExecutor(numThreads, numThreads, 0L,
+					TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+      // Pre-starting all threads to ensure the threads are executed as JobTracker
+      // instead of the user submitted the job, otherwise job initialization fails
+      // when security is enabled
+      if (threadPool.prestartAllCoreThreads() != numThreads) {
+          throw new RuntimeException("Failed to pre-start threads in JobInitializer");
+      }
+      this.ttm = ttm;
+    }
+
+    public void initJob(JobInfo jobInfo, JobInProgress job) {
+      if (!mockMode) {
+        threadPool.execute(new InitJob(jobInfo, job));
+      } else {
+        new InitJob(jobInfo, job).run();
+      }
+    }
+
+    class InitJob implements Runnable {
+      private JobInfo jobInfo;
+      private JobInProgress job;
+      public InitJob(JobInfo jobInfo, JobInProgress job) {
+        this.jobInfo = jobInfo;
+        this.job = job;
+      }
+      public void run() {
+        ttm.initJob(job);
+      }
+    }
+
+    void terminate() {
+      LOG.info("Shutting down thread pool");
+      threadPool.shutdownNow();
+      try {
+        threadPool.awaitTermination(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        // Ignore, we are in shutdown anyway.
+      }
     }
   }
 
@@ -1066,5 +1118,4 @@ public class FairScheduler extends TaskScheduler {
           + "file. Valid pools are: "
           + StringUtils.join(", ", declaredPools));
   }
-
 }
