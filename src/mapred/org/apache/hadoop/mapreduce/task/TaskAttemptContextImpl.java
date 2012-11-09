@@ -19,6 +19,9 @@
 package org.apache.hadoop.mapreduce.task;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.Counters;
+import org.apache.hadoop.mapreduce.StatusReporter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 
@@ -29,11 +32,18 @@ public class TaskAttemptContextImpl extends JobContextImpl
     implements TaskAttemptContext {
   private final TaskAttemptID taskId;
   private String status = "";
-  
+  private StatusReporter reporter;
+
   public TaskAttemptContextImpl(Configuration conf, 
                                 TaskAttemptID taskId) {
+    this(conf, taskId, new DummyReporter());
+  }
+
+  public TaskAttemptContextImpl(Configuration conf, 
+      TaskAttemptID taskId, StatusReporter reporter) {
     super(conf, taskId.getJobID());
     this.taskId = taskId;
+    this.reporter = reporter;
   }
 
   /**
@@ -44,13 +54,6 @@ public class TaskAttemptContextImpl extends JobContextImpl
   }
 
   /**
-   * Set the current status of the task to the given string.
-   */
-  public void setStatus(String msg) {
-    status = msg;
-  }
-
-  /**
    * Get the last set status message.
    * @return the current status message
    */
@@ -58,11 +61,47 @@ public class TaskAttemptContextImpl extends JobContextImpl
     return status;
   }
 
+  @Override
+  public Counter getCounter(Enum<?> counterName) {
+    return reporter.getCounter(counterName);
+  }
+
+  @Override
+  public Counter getCounter(String groupName, String counterName) {
+    return reporter.getCounter(groupName, counterName);
+  }
+
   /**
-   * Report progress. The subtypes actually do work in this method.
+   * Report progress.
    */
   @Override
-  public void progress() { 
+  public void progress() {
+    reporter.progress();
   }
-    
+
+  protected void setStatusString(String status) {
+    this.status = status;
+  }
+
+  /**
+   * Set the current status of the task to the given string.
+   */
+  @Override
+  public void setStatus(String status) {
+    setStatusString(status);
+    reporter.setStatus(status);
+  }
+
+  public static class DummyReporter extends StatusReporter {
+    public void setStatus(String s) {
+    }
+    public void progress() {
+    }
+    public Counter getCounter(Enum<?> name) {
+      return new Counters().findCounter(name);
+    }
+    public Counter getCounter(String group, String name) {
+      return new Counters().findCounter(group, name);
+    }
+  }
 }
