@@ -56,6 +56,11 @@ public class TaskAttemptContextImpl
   public JobConf getJobConf() {
     return (JobConf) getConfiguration();
   }
+  
+  @Override
+  public float getProgress() {
+    return reporter.getProgress();
+  }
 
   @Override
   public Counter getCounter(Enum<?> counterName) {

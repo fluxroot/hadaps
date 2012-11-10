@@ -386,6 +386,10 @@ public class MapReduceTestUtil {
       }
       public void progress() {
       }
+      @Override
+      public float getProgress() {
+        return 0;
+      }
       public Counter getCounter(Enum<?> name) {
         return new Counters().findCounter(name);
       }
