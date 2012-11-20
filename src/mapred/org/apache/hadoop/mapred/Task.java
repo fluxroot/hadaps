@@ -580,7 +580,7 @@ abstract public class Task implements Writable, Configurable {
     
     public float getProgress() {
       return taskProgress.getProgress();
-    };
+    }
     
     public void progress() {
       // indicate that progress update needs to be sent
