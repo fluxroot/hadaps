@@ -123,7 +123,7 @@ public class ContextFactory {
         WRAPPED_CONTEXT_FIELD = null;
       }
       MAP_CONTEXT_CONSTRUCTOR.setAccessible(true);
-      REPORTER_FIELD = taskIOContextCls.getDeclaredField("reporter");
+      REPORTER_FIELD = taskContextCls.getDeclaredField("reporter");
       REPORTER_FIELD.setAccessible(true);
       READER_FIELD = mapContextCls.getDeclaredField("reader");
       READER_FIELD.setAccessible(true);
