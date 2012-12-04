@@ -56,6 +56,8 @@ public class HAUtil {
   public static final boolean MR_HA_AUTO_FAILOVER_ENABLED_DEFAULT = false;
   public static final String  MR_HA_ZKFC_PORT_KEY = "mapred.ha.zkfc.port";
   public static final int     MR_HA_ZKFC_PORT_DEFAULT = 8019;
+  public static final String  MR_HA_ACTIVE_CHECK_MILLIS = "mapred.ha.jobtracker.active-check.millis";
+  public static final int     MR_HA_ACTIVE_CHECK_MILLIS_DEFAULT = 1000;
 
   // Failover configuration
   public static final String  MR_CLIENT_FAILOVER_PROXY_PROVIDER_KEY_PREFIX = "mapred.client.failover.proxy.provider";

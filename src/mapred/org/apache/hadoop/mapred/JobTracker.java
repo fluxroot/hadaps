@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -58,12 +59,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.mapred.JobSubmissionProtocol;
@@ -1706,6 +1710,7 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
   static final String SUBDIR = "jobTracker";
   final LocalFileSystem localFs;
   FileSystem fs = null;
+  FileContext fc = null;
   Path systemDir = null;
   JobConf conf;
 
@@ -1917,6 +1922,10 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
           fs = getMROwner().doAs(new PrivilegedExceptionAction<FileSystem>() {
             public FileSystem run() throws IOException {
               return FileSystem.get(conf);
+          }});
+          fc = getMROwner().doAs(new PrivilegedExceptionAction<FileContext>() {
+            public FileContext run() throws IOException {
+              return FileContext.getFileContext(conf);
           }});
         }
         // clean up the system dir, which will only work if hdfs is out of 
@@ -3531,8 +3540,10 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
         // Store the information in a file so that the job can be recovered
         // later (if at all)
         Path jobDir = getSystemDirectoryForJob(jobId);
-        FileSystem.mkdirs(fs, jobDir, new FsPermission(SYSTEM_DIR_PERMISSION));
-        FSDataOutputStream out = fs.create(getSystemFileForJob(jobId));
+        fc.mkdir(jobDir, new FsPermission(SYSTEM_DIR_PERMISSION), false);
+        FSDataOutputStream out = fc.create(getSystemFileForJob(jobId),
+            EnumSet.of(CreateFlag.CREATE),
+            Options.CreateOpts.donotCreateParent());
         jobInfo.write(out);
         out.close();
       }

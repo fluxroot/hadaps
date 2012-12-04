@@ -77,7 +77,7 @@ public class MiniMRHACluster {
     return new JobTrackerHADaemon(c);
   }
   
-  private static void configureLogicalName(Configuration conf) {
+  public static void configureLogicalName(Configuration conf) {
     String logicalName = "logicaljt";
     String jt1Id = "jt1";
     String jt2Id = "jt2";

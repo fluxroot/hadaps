@@ -18,24 +18,28 @@
 
 package org.apache.hadoop.mapred;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.SleepJob;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.ha.FailoverController;
 import org.apache.hadoop.ha.HAServiceProtocol.RequestSource;
 import org.apache.hadoop.ha.HAServiceProtocol.StateChangeRequestInfo;
 import org.apache.hadoop.ha.TestNodeFencer.AlwaysSucceedFencer;
-import org.apache.hadoop.mapred.ConfiguredFailoverProxyProvider;
 import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
-import org.junit.*;
+import org.apache.hadoop.util.ExitUtil;
+import org.junit.After;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests state transition from active->standby, and manual failover
@@ -58,16 +62,20 @@ public class TestHAStateTransitions {
   private JobTrackerHAServiceTarget target2;
   private Configuration conf;
   
-  @Before
-  public void setUp() throws Exception {
-    conf = new Configuration();
+  private void startCluster() throws Exception {
+    startCluster(new Configuration());
+  }
+  private void startCluster(Configuration conf) throws Exception {
+    FileUtil.fullyDelete(new File("/tmp/tst"));
+    ExitUtil.disableSystemExit();
+    this.conf = conf;
     conf.set(HAUtil.MR_HA_FENCING_METHODS_KEY,
         AlwaysSucceedFencer.class.getName());
     cluster = new MiniMRHACluster(conf);
     cluster.getJobTrackerHaDaemon(0).makeActive();
     cluster.startTaskTracker(0, 1);
     cluster.waitActive();
-    
+
     jt1 = cluster.getJobTrackerHaDaemon(0);
     jt2 = cluster.getJobTrackerHaDaemon(1);
     target1 = new JobTrackerHAServiceTarget(jt1.getConf());
@@ -76,12 +84,15 @@ public class TestHAStateTransitions {
   
   @After
   public void tearDown() throws Exception {
-    cluster.shutdown();
+    if (cluster != null) {
+      cluster.shutdown();
+    }
   }
   
   @Test(timeout=60000)
   public void testClientFailover() throws Exception {
     LOG.info("Running testClientFailover");
+    startCluster();
 
     // Test with client. c.f. HATestUtil.setFailoverConfigurations
     JobClient jc = new JobClient(conf);
@@ -106,10 +117,9 @@ public class TestHAStateTransitions {
   @Test(timeout=60000)
   public void testFailoverWhileRunningJob() throws Exception {
     LOG.info("Running testFailoverWhileRunningJob");
+    startCluster();
 
     // Inspired by TestRecoveryManager#testJobResubmission
-    
-    FileUtil.fullyDelete(new File("/tmp/tst"));
     
     // start a job on jt1
     JobConf job1 = new JobConf(conf);
@@ -146,6 +156,7 @@ public class TestHAStateTransitions {
   @Test(timeout=60000)
   public void testTransitionToCurrentStateIsANop() throws Exception {
     LOG.info("Running testTransitionToCurrentStateIsANop");
+    startCluster();
 
     JobTracker existingJt = jt1.getJobTracker();
     jt1.getJobTrackerHAServiceProtocol().transitionToActive(REQ_INFO);
@@ -155,5 +166,77 @@ public class TestHAStateTransitions {
     // Transitioning to standby for a second time should not throw an exception
     jt1.getJobTrackerHAServiceProtocol().transitionToStandby(REQ_INFO);
   }
+  
+  @Test(timeout=60000)
+  public void testSecondActiveFencesFirst() throws Exception {
+    LOG.info("Running testSecondActiveFencesFirst");
+    startCluster();
+    
+    // start a job on jt1
+    JobConf job1 = new JobConf(conf);
+    String signalFile = new Path(TEST_DIR, "signal").toString();
+    UtilsForTests.configureWaitingJobConf(job1, new Path(TEST_DIR, "input"),
+        new Path(TEST_DIR, "output3"), 2, 0, "test-resubmission", signalFile,
+        signalFile);
+    JobClient jc = new JobClient(job1);
+    RunningJob rJob1 = jc.submitJob(job1);
+    while (rJob1.mapProgress() < 0.5f) {
+      LOG.info("Waiting for job " + rJob1.getID() + " to be 50% done: " +
+          rJob1.mapProgress());
+      UtilsForTests.waitFor(500);
+    }
+    LOG.info("Waiting for job " + rJob1.getID() + " to be 50% done: " +
+        rJob1.mapProgress());
+    
+    // force jt2 to become active, even though jt1 is still active
+    jt2.getJobTrackerHAServiceProtocol().transitionToActive(REQ_INFO);
+    
+    // wait for jt1 to detect that it is no longer active and fence itself
+    UtilsForTests.waitFor(1500);
+    
+    // jt1 should have exited
+    assertTrue(ExitUtil.terminateCalled());
+    jt1.getJobTracker().close(); // shut it down manually
+    
+    // allow job1 to complete
+    FileSystem fs = FileSystem.getLocal(conf);
+    fs.create(new Path(TEST_DIR, "signal"));
+    while (!rJob1.isComplete()) {
+      LOG.info("Waiting for job " + rJob1.getID() + " to be successful: " +
+          rJob1.mapProgress());
+      UtilsForTests.waitFor(500);
+    }
+    assertTrue("Job should be successful", rJob1.isSuccessful());
+  }
 
+  @Test(timeout=60000)
+  public void testSecondActiveCausesFirstToRejectJob() throws Exception {
+    Configuration conf = new Configuration();
+    conf.setLong(HAUtil.MR_HA_ACTIVE_CHECK_MILLIS, Long.MAX_VALUE); // never check
+    startCluster(conf);
+
+    // Ensure client always uses jt1
+    conf.set("mapred.job.tracker",
+        jt1.getJobTracker().getConf().get("mapred.job.tracker"));
+
+    // run a job on jt1
+    SleepJob job = new SleepJob();
+    job.setConf(conf);
+    assertEquals("Job succeeded", 0, job.run(1, 0, 1, 1, 1, 1));
+
+    // force jt2 to become active, even though jt1 is still active
+    jt2.getJobTrackerHAServiceProtocol().transitionToActive(REQ_INFO);
+
+    // try to submit a job to jt1, which should fail even though still running
+    job = new SleepJob();
+    job.setConf(conf);
+    JobConf jobConf = job.setupJobConf(1, 0, 1, 1, 1, 1);
+    JobClient jc = new JobClient(jobConf);
+    try {
+      jc.submitJob(jobConf);
+      fail("Job submission should fail");
+    } catch (Exception e) {
+      // expected
+    }
+  }
 }

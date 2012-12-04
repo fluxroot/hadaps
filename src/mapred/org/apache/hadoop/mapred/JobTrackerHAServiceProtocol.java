@@ -22,11 +22,22 @@ import static org.apache.hadoop.util.ExitUtil.terminate;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Strings;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.ha.HAServiceProtocol;
 import org.apache.hadoop.ha.HAServiceStatus;
 import org.apache.hadoop.ha.HealthCheckFailedException;
@@ -39,20 +50,38 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
   private static final Log LOG =
     LogFactory.getLog(JobTrackerHAServiceProtocol.class);
 
+  public static final String SYSTEM_DIR_SEQUENCE_PREFIX = "seq-";
+  
   private Configuration conf;
   private HAServiceState haState = HAServiceState.STANDBY;
+  private FileSystem fs;
   private JobTracker jt;
+  private Path currentSysDir;
   private Thread jtThread;
+  private ScheduledExecutorService sysDirMonitorExecutor;
   private JobTrackerHAHttpRedirector httpRedirector;
   
   public JobTrackerHAServiceProtocol(Configuration conf) {
     this.conf = conf;
     this.httpRedirector = new JobTrackerHAHttpRedirector(conf);
     try {
+      this.fs = createFileSystem(conf);
       httpRedirector.start();
     } catch (Throwable t) {
       doImmediateShutdown(t);
     }
+  }
+  
+  private FileSystem createFileSystem(final Configuration conf)
+      throws IOException, InterruptedException {
+    ACLsManager aclsManager = new ACLsManager(conf, null, null);
+    return aclsManager.getMROwner().doAs(
+      new PrivilegedExceptionAction<FileSystem>() {
+        public FileSystem run() throws IOException {
+          return FileSystem.get(conf);
+        }
+      }
+    );
   }
   
   public JobTracker getJobTracker() {
@@ -62,6 +91,31 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
   @VisibleForTesting
   Thread getJobTrackerThread() {
     return jtThread;
+  }
+  
+  private class JobTrackerRunner implements Runnable {
+    @Override
+    public void run() {
+      try {
+        jt.offerService();
+      } catch (Throwable t) {
+        doImmediateShutdown(t);
+      }
+    }
+  }
+  
+  private class SystemDirectoryMonitor implements Runnable {
+    @Override
+    public void run() {
+      try {
+        if (!fs.exists(currentSysDir)) {
+          throw new IOException("System directory " + currentSysDir +
+              " no longer exists. New active has started.");
+        }
+      } catch (Throwable t) {
+        doImmediateShutdown(t);
+      }
+    }
   }
 
   @Override
@@ -98,25 +152,90 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
     try {
       httpRedirector.stop();
       JobConf jtConf = new JobConf(conf);
+      currentSysDir = rollSystemDirectory(jtConf);
       // Update the conf for the JT so the address is resolved
       HAUtil.setJtRpcAddress(jtConf);
       jt = JobTracker.startTracker(jtConf);
     } catch (Throwable t) {
       doImmediateShutdown(t);
     }
-    jtThread = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          jt.offerService();
-        } catch (Throwable t) {
-          doImmediateShutdown(t);
-        }
-      }
-    });
+    jtThread = new Thread(new JobTrackerRunner(),
+        JobTrackerRunner.class.getSimpleName());
     jtThread.start();
+    long activeCheckMillis = conf.getLong(HAUtil.MR_HA_ACTIVE_CHECK_MILLIS,
+        HAUtil.MR_HA_ACTIVE_CHECK_MILLIS_DEFAULT);
+    sysDirMonitorExecutor = Executors.newSingleThreadScheduledExecutor();
+    sysDirMonitorExecutor.scheduleWithFixedDelay(new SystemDirectoryMonitor(),
+        activeCheckMillis, activeCheckMillis, TimeUnit.MILLISECONDS);
     haState = HAServiceState.ACTIVE;
     LOG.info("Transitioned to active");
+  }
+
+  /**
+   * <p>
+   * The system directory (mapred.system.dir) is modified so that it has a
+   * strictly increasing sequence number as a part of its path. E.g. if it
+   * is set to "/mapred/system" then this method will change it to
+   * "/mapred/system/seq-&gt;counter&lt;", where the (zero-padded) counter is
+   * one more than the counter for the previous system directory, or zero if
+   * none existed before. In the first case the previous system directory is
+   * renamed to the new one. If the old active JT is still active, then
+   * it will notice that its system directory no longer exists and will
+   * shut itself down.
+   * </p>
+   * @param jtConf
+   * @return the new system directory
+   * @throws IOException
+   */
+  @VisibleForTesting
+  Path rollSystemDirectory(JobConf jtConf) throws IOException {
+    // Find most recent system dir
+    Path sysDir = new Path(jtConf.get("mapred.system.dir",
+        "/tmp/hadoop/mapred/system"));
+    Path qualifiedSysDir = fs.makeQualified(sysDir);
+    FileStatus[] subDirectories;
+    try {
+      subDirectories = fs.listStatus(sysDir, new PathFilter() {
+        @Override public boolean accept(Path p) {
+          return p.getName().matches(SYSTEM_DIR_SEQUENCE_PREFIX + "\\d+");
+        }
+      });
+    } catch (FileNotFoundException e) {
+      subDirectories = null;
+    }
+    // Find the next system directory by looking for the previous one and
+    // incrementing its sequence number
+    Path prevSysDir = null;
+    if (subDirectories != null && subDirectories.length > 0) {
+      Arrays.sort(subDirectories);
+      prevSysDir = subDirectories[subDirectories.length - 1].getPath();
+    }
+    Path nextSysDir;
+    if (prevSysDir == null) {
+      LOG.info("No previous system directory found");
+      nextSysDir = new Path(qualifiedSysDir, createSysDirName(0));
+    } else {
+      long previous = Long.parseLong(
+          prevSysDir.getName().substring(SYSTEM_DIR_SEQUENCE_PREFIX.length()));
+      nextSysDir = new Path(qualifiedSysDir, createSysDirName(previous + 1));
+      LOG.info("Renaming previous system directory " + prevSysDir +
+          " to " + nextSysDir);
+      if (!fs.rename(prevSysDir, nextSysDir)) {
+        throw new IOException("Could not rename " + prevSysDir +
+            " to " + nextSysDir);
+      }
+    }
+    // set nextSysDir on the configuration passed to the JT
+    jtConf.set("mapred.system.dir", nextSysDir.toString());
+    return nextSysDir;
+  }
+
+  /**
+   * @return zero padded counter with sys dir prefix
+   */
+  private String createSysDirName(long counter) {
+    String paddedCounter = Strings.padStart("" + counter, 12, '0');
+    return SYSTEM_DIR_SEQUENCE_PREFIX + paddedCounter;
   }
 
   @Override
@@ -128,6 +247,9 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
     }
     LOG.info("Transitioning to standby");
     try {
+      if (sysDirMonitorExecutor != null) {
+        sysDirMonitorExecutor.shutdownNow();
+      }
       if (jt != null) {
         jt.close();
       }
@@ -138,6 +260,8 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
     } catch (Throwable t) {
       doImmediateShutdown(t);
     }
+    sysDirMonitorExecutor = null;
+    currentSysDir = null;
     jt = null;
     jtThread = null;
     haState = HAServiceState.STANDBY;
@@ -147,6 +271,9 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
   public void stop() {
     LOG.info("Stopping");
     try {
+      if (sysDirMonitorExecutor != null) {
+        sysDirMonitorExecutor.shutdownNow();
+      }
       if (jt != null) {
         jt.close();
       }
@@ -157,6 +284,8 @@ public class JobTrackerHAServiceProtocol implements HAServiceProtocol {
     } catch (Throwable t) {
       doImmediateShutdown(t);
     }
+    sysDirMonitorExecutor = null;
+    currentSysDir = null;
     jt = null;
     jtThread = null;
     haState = HAServiceState.STANDBY;

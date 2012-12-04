@@ -40,10 +40,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.CleanupQueue.PathDeletionContext;
 import org.apache.hadoop.mapred.AuditLogger;
@@ -3471,7 +3473,17 @@ public class JobInProgress {
     TokenCache.setJobToken(token, tokenStorage);
         
     // write TokenStorage out
-    tokenStorage.writeTokenStorageFile(keysFile, jobtracker.getConf());
+    FileSystem fs = keysFile.getFileSystem(jobtracker.getConf());
+    FSDataOutputStream os = null;
+    try {
+      os = fs.createNonRecursive(keysFile, true,
+          jobtracker.getConf().getInt("io.file.buffer.size", 4096),
+          fs.getDefaultReplication(keysFile),
+          fs.getDefaultBlockSize(keysFile), null);
+      tokenStorage.writeTokenStorageToStream(os);
+    } finally {
+      IOUtils.closeStream(os);
+    }
     LOG.info("jobToken generated and stored with users keys in "
         + keysFile.toUri().getPath());
   }

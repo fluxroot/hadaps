@@ -18,17 +18,25 @@
 package org.apache.hadoop.mapred;
 
 import static org.apache.hadoop.test.GenericTestUtils.assertExceptionContains;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
+import java.security.PrivilegedExceptionAction;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.SleepJob;
+import org.apache.hadoop.ha.HAServiceProtocol;
+import org.apache.hadoop.ha.TestNodeFencer;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.AccessControlException;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ExitUtil.ExitException;
 import org.junit.Test;
 
@@ -37,11 +45,13 @@ import org.junit.Test;
  */
 public class TestHAStateTransitionFailure {
 
+  private static final Log LOG =
+      LogFactory.getLog(TestHAStateTransitionFailure.class);
   /**
    * Ensure that a failure to fully transition to the active state causes a
    * shutdown of the jobtracker.
    */
-  @Test
+  @Test(timeout=60000)
   public void testFailureToTransitionCausesShutdown() throws Exception {
     MiniDFSCluster dfs = null;
     MiniMRHACluster cluster = null;
@@ -52,21 +62,31 @@ public class TestHAStateTransitionFailure {
           .format(true)
           .checkExitOnShutdown(false)
           .build();
-      
+
       // Set the owner of the system directory to a different user to the one
       // that starts the JT. This will cause the JT to fail to transition to
       // the active state.
       FileSystem fs = dfs.getFileSystem();
       Path mapredSysDir = new Path(conf.get("mapred.system.dir"));
-      fs.mkdirs(mapredSysDir);
+      fs.mkdirs(mapredSysDir, new FsPermission((short) 700));
       fs.setOwner(mapredSysDir, "mr", "mrgroup");
 
       cluster = new MiniMRHACluster(fs.getConf());
+      final MiniMRHACluster finalCluster = cluster;
       try {
+        UserGroupInformation ugi = UserGroupInformation.createUserForTesting(
+            "notmr", new String[]{"notmrgroup"});
+        ugi.doAs(new PrivilegedExceptionAction<Object>() {
+          @Override
+          public Object run() throws Exception {
+            finalCluster.getJobTrackerHaDaemon(0).makeActive();
+            return null;
+          }
+        });
         cluster.getJobTrackerHaDaemon(0).makeActive();
         fail("Transitioned to active but should not have been able to.");
       } catch (ExitException ee) {
-        assertExceptionContains("is not owned by", ee);
+        assertExceptionContains("Permission denied", ee);
       }
     } finally {
       if (cluster != null) {
