@@ -21,10 +21,12 @@ package org.apache.hadoop.mapred;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 
+import java.util.concurrent.CountDownLatch;
 import junit.framework.TestCase;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.examples.SleepJob;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -46,6 +48,7 @@ public class TestRecoveryManager {
   private static final Log LOG = 
     LogFactory.getLog(TestRecoveryManager.class);
   private static final Path TEST_DIR = new Path("/tmp"); // on HDFS
+  private JobConf conf;
   private FileSystem fs;
   private MiniDFSCluster dfs;
   private MiniMRCluster mr;
@@ -58,11 +61,11 @@ public class TestRecoveryManager {
 
   @Before
   public void setUp() throws IOException {
-    JobConf conf = new JobConf();
-    
+    conf = new JobConf();
+
     dfs = new MiniDFSCluster(conf, 1, true, null);
     fs = dfs.getFileSystem();
-    
+
     conf.set("mapreduce.jobtracker.staging.root.dir", "/user");
     conf.set("mapred.system.dir", "/mapred");
     Path mapredSysDir =  new Path(conf.get("mapred.system.dir"));
@@ -70,13 +73,19 @@ public class TestRecoveryManager {
     fs.setPermission(mapredSysDir, new FsPermission((short) 0700));
     fs.setOwner(mapredSysDir,
         UserGroupInformation.getCurrentUser().getUserName(), "mrgroup");
-    
+
     mkdir(fs, "/user");
     mkdir(fs, "/mapred");
     mkdir(fs, "/tmp");
-    
+
+  }
+
+  private void startCluster() throws IOException {
+    startCluster(conf);
+  }
+
+  private void startCluster(JobConf conf) throws IOException {
     mr = new MiniMRCluster(1, dfs.getFileSystem().getUri().toString(), 1, null, null, conf);
-    
   }
 
   @After
@@ -104,6 +113,7 @@ public class TestRecoveryManager {
   @Test(timeout=120000)
   public void testJobTrackerRestartsWithMissingJobFile() throws Exception {
     LOG.info("Testing jobtracker restart with faulty job");
+    startCluster();
     String signalFile = new Path(TEST_DIR, "signal").toString();
 
     JobConf job1 = mr.createJobConf();
@@ -185,6 +195,7 @@ public class TestRecoveryManager {
   @Test(timeout=120000)
   public void testJobResubmission() throws Exception {
     LOG.info("Testing Job Resubmission");
+    startCluster();
     String signalFile = new Path(TEST_DIR, "signal").toString();
 
     // make sure that the jobtracker is in recovery mode
@@ -257,6 +268,7 @@ public class TestRecoveryManager {
   @Test
   public void testJobResubmissionAsDifferentUser() throws Exception {
     LOG.info("Testing Job Resubmission as a different user to the jobtracker");
+    startCluster();
     String signalFile = new Path(TEST_DIR, "signal").toString();
 
     // make sure that the jobtracker is in recovery mode
@@ -313,6 +325,72 @@ public class TestRecoveryManager {
     Assert.assertTrue("Task should be successful", rJob1.isSuccessful());
   }
 
+  public static class TestJobTrackerInstrumentation extends JobTrackerInstrumentation {
+    static CountDownLatch finalizeCall = new CountDownLatch(1);
+
+    public TestJobTrackerInstrumentation(JobTracker jt, JobConf conf) {
+      super(jt, conf);
+    }
+
+    public void finalizeJob(JobConf conf, JobID id) {
+      if (finalizeCall.getCount() == 0) {
+        return;
+      }
+      finalizeCall.countDown();
+      throw new IllegalStateException("Controlled error finalizing job");
+    }
+  }
+
+  @Test
+  public void testJobTrackerRestartBeforeJobFinalization() throws Exception {
+    LOG.info("Testing Job Resubmission");
+
+    // make sure that the jobtracker is in recovery mode
+    conf.setBoolean("mapred.jobtracker.restart.recover", true);
+
+    // use a test JobTrackerInstrumentation implementation to shut down
+    // the jobtracker after the tasks have all completed, but
+    // before the job is finalized and check that it can be recovered correctly
+    conf.setClass("mapred.jobtracker.instrumentation", TestJobTrackerInstrumentation.class,
+            JobTrackerInstrumentation.class);
+
+    startCluster(conf);
+
+    JobTracker jobtracker = mr.getJobTrackerRunner().getJobTracker();
+
+    SleepJob job = new SleepJob();
+    job.setConf(mr.createJobConf());
+    JobConf job1 = job.setupJobConf(1, 0, 1, 1, 1, 1);
+    JobClient jc = new JobClient(job1);
+    RunningJob rJob1 = jc.submitJob(job1);
+    LOG.info("Submitted first job " + rJob1.getID());
+
+    TestJobTrackerInstrumentation.finalizeCall.await();
+
+    // kill the jobtracker
+    LOG.info("Stopping jobtracker");
+    mr.stopJobTracker();
+
+    // start the jobtracker
+    LOG.info("Starting jobtracker");
+    mr.startJobTracker();
+    UtilsForTests.waitForJobTracker(jc);
+
+    jobtracker = mr.getJobTrackerRunner().getJobTracker();
+
+    // assert that job is recovered by the jobtracker
+    Assert.assertEquals("Resubmission failed ", 1,
+        jobtracker.getAllJobs().length);
+
+    // wait for job 1 to complete
+    JobInProgress jip = jobtracker.getJob(rJob1.getID());
+    while (!jip.isComplete()) {
+      LOG.info("Waiting for job " + rJob1.getID() + " to be successful");
+      UtilsForTests.waitFor(100);
+    }
+    Assert.assertTrue("Task should be successful", rJob1.isSuccessful());
+  }
+
   /**
    * Tests the {@link JobTracker.RecoveryManager} against the exceptions thrown 
    * during recovery. It does the following :
@@ -328,6 +406,7 @@ public class TestRecoveryManager {
   @Test(timeout=120000)
   public void testJobTrackerRestartWithBadJobs() throws Exception {
     LOG.info("Testing recovery-manager");
+    startCluster();
     String signalFile = new Path(TEST_DIR, "signal").toString();
     // make sure that the jobtracker is in recovery mode
     mr.getJobTrackerConf()
@@ -459,6 +538,7 @@ public class TestRecoveryManager {
   @Test(timeout=120000)
   public void testRestartCount() throws Exception {
     LOG.info("Testing Job Restart Count");
+    startCluster();
     String signalFile = new Path(TEST_DIR, "signal").toString();
     // make sure that the jobtracker is in recovery mode
     mr.getJobTrackerConf()
@@ -548,6 +628,7 @@ public class TestRecoveryManager {
   @Test(timeout=120000)
   public void testJobTrackerInfoCreation() throws Exception {
     LOG.info("Testing jobtracker.info file");
+    startCluster();
     String namenode = (dfs.getFileSystem()).getUri().getHost() + ":"
                       + (dfs.getFileSystem()).getUri().getPort();
     // shut down the data nodes
