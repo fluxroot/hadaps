@@ -280,8 +280,8 @@ public class TestStreamingStatus {
       finalPhaseInTask = "reduce";
     }
     assertEquals(1, reports.length);
-    assertEquals(expectedStatus +
-        (finalPhaseInTask == null ? "" : " > " + finalPhaseInTask),
+    assertEquals(expectedStatus + " > "
+        + (finalPhaseInTask == null ? "sort" : finalPhaseInTask),
         reports[0].getState());
   }
 
