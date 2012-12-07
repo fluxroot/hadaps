@@ -307,7 +307,7 @@ public class TestStreamingStatus {
 
     // trim() is called on expectedStderr here because the method
     // MapReduceTestUtil.readTaskLog() returns trimmed String.
-    assertTrue(log.equals(expectedStderr.trim()));
+    assertTrue(log.contains(expectedStderr.trim()));
   }
 
   // Validate if user counter is incremented properly
