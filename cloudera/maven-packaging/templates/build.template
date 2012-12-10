@@ -5,3 +5,4 @@ hadoop-hdfs.version=org.apache.hadoop:hadoop-hdfs.version
 hadoop-mapreduce.version=org.apache.hadoop:hadoop-mapreduce.version
 reactor.repo=https://repository.cloudera.com/content/repositories/snapshots
 avro.version=org.apache.avro:avro.version
+zookeeper.version=org.apache.zookeeper:zookeeper.version

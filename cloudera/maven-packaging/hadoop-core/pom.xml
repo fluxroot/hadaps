@@ -140,6 +140,10 @@
       <artifactId>jackson-core-asl</artifactId>
       <version>1.5.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+    </dependency>
   </dependencies>
   
   <build>
