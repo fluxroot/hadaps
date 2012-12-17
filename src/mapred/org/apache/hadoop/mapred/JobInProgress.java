@@ -328,8 +328,8 @@ public class JobInProgress {
   /**
    * Create an almost empty JobInProgress, which can be used only for tests
    */
-  protected JobInProgress(JobID jobid, JobConf conf, JobTracker tracker) {
-    System.out.println("DEBUG3");
+  protected JobInProgress(JobID jobid, JobConf conf, JobTracker tracker)
+  throws IOException {
     this.conf = conf;
     this.jobId = jobid;
     this.numMapTasks = conf.getNumMapTasks();
@@ -359,6 +359,9 @@ public class JobInProgress {
     this.maxTaskFailuresPerTracker = conf.getMaxTaskFailuresPerTracker();
     this.mapFailuresPercent = conf.getMaxMapTaskFailuresPercent();
     this.reduceFailuresPercent = conf.getMaxReduceTaskFailuresPercent();
+
+    // Check task limits
+    checkTaskLimits();
 
     this.taskCompletionEvents = new ArrayList<TaskCompletionEvent>
       (numMapTasks + numReduceTasks + 10);
@@ -485,12 +488,28 @@ public class JobInProgress {
       // register job's tokens for renewal
       DelegationTokenRenewal.registerDelegationTokensForRenewal(
           jobInfo.getJobID(), ts, jobtracker.getConf());
+
+      // Check task limits
+      checkTaskLimits();
     } finally {
       //close all FileSystems that was created above for the current user
       //At this point, this constructor is called in the context of an RPC, and
       //hence the "current user" is actually referring to the kerberos
       //authenticated user (if security is ON).
       FileSystem.closeAllForUGI(UserGroupInformation.getCurrentUser());
+    }
+  }
+
+  private void checkTaskLimits() throws IOException {
+    // if the number of tasks is larger than a configured value
+    // then fail the job.
+    int maxTasks = jobtracker.getMaxTasksPerJob();
+    LOG.info(jobId + ": nMaps=" + numMapTasks + " nReduces=" + numReduceTasks + " max=" + maxTasks);
+    if (maxTasks > 0 && (numMapTasks + numReduceTasks) > maxTasks) {
+      throw new IOException(
+          "The number of tasks for this job " +
+              (numMapTasks + numReduceTasks) +
+              " exceeds the configured limit " + maxTasks);
     }
   }
 
@@ -710,17 +729,6 @@ public class JobInProgress {
     //
     TaskSplitMetaInfo[] splits = createSplits(jobId);
     numMapTasks = splits.length;
-
-
-    // if the number of splits is larger than a configured value
-    // then fail the job.
-    int maxTasks = jobtracker.getMaxTasksPerJob();
-    if (maxTasks > 0 && numMapTasks + numReduceTasks > maxTasks) {
-      throw new IOException(
-                "The number of tasks for this job " + 
-                (numMapTasks + numReduceTasks) +
-                " exceeds the configured limit " + maxTasks);
-    }
 
     jobtracker.getInstrumentation().addWaitingMaps(getJobID(), numMapTasks);
     jobtracker.getInstrumentation().addWaitingReduces(getJobID(), numReduceTasks);
