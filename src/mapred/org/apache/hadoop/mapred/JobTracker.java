@@ -1539,13 +1539,19 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
           final Credentials ts =
             jobTokenFile.getFileSystem(job).exists(jobTokenFile) ?
             Credentials.readTokenStorageFile(jobTokenFile, job) : null;
-          ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
+          JobStatus status = ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
             public JobStatus run() throws IOException, InterruptedException {
               return submitJob(JobID.downgrade(token.getJobID()), token
                   .getJobSubmitDir().toString(), ugi, ts, true);
             }
           });
-          recovered++;
+          if (status == null) {
+            LOG.info("Job " + jobId + " was not recovered since it " +
+              "disabled recovery on restart (mapred.job.restart.recover set " +
+              "to false).");
+          } else {
+            recovered++;
+          }
         } catch (Exception e) {
           LOG.warn("Could not recover job " + jobId, e);
         }
@@ -3475,8 +3481,10 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
    * JobStatus. Those two sub-objects are sometimes shipped outside of the
    * JobTracker. But JobInProgress adds info that's useful for the JobTracker
    * alone.
+   * @return null if the job is being recovered but mapred.job.restart.recover
+   * is false.
    */
-  public JobStatus submitJob(JobID jobId, String jobSubmitDir,
+  JobStatus submitJob(JobID jobId, String jobSubmitDir,
       UserGroupInformation ugi, Credentials ts, boolean recovered)
       throws IOException {
     JobInfo jobInfo = null;
@@ -3498,6 +3506,11 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
       job = new JobInProgress(this, this.conf, jobInfo, 0, ts);
     } catch (Exception e) {
       throw new IOException(e);
+    }
+    
+    if (recovered && 
+        !job.getJobConf().getBoolean("mapred.job.restart.recover", true)) {
+      return null;
     }
     
     synchronized (this) {
