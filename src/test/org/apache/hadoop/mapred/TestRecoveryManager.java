@@ -100,6 +100,7 @@ public class TestRecoveryManager {
    *  - restarts the jobtracker
    *  - checks if the jobtraker starts normally
    */
+  @Ignore
   @Test(timeout=120000)
   public void testJobTrackerRestartsWithMissingJobFile() throws Exception {
     LOG.info("Testing jobtracker restart with faulty job");
