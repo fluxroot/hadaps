@@ -59,12 +59,20 @@ public class TestQueueManager extends TestCase {
     // Add real user to fake groups mapping so that child processes (tasks)
     // will have permissions on the dfs
     String j = UserGroupInformation.getCurrentUser().getShortUserName();
-    UserGroupInformation.createUserForTesting(j, new String [] { "myGroup"});
-    
+    return UserGroupInformation.createUserForTesting(j, new String [] { "myGroup"});
+
+    /**
+     * HDFS-2264 causes NN/DN registration to no longer be controlled by ACLs,
+     * but instead require superuser privileges. There's a bug in the
+     * MiniDFSCluster wherein starting the cluster inside a doAs block correctly
+     * starts the NN as that user, but not the DNs, causing DN registration to
+     * fail. Commenting out the following to ensure that the NN and DNs all
+     * start as the same user.
+     */
     // Create a fake user for all processes to execute within
-    UserGroupInformation ugi = UserGroupInformation.createUserForTesting("Zork",
-                                                 new String [] {"ZorkGroup"});
-    return ugi;
+    // UserGroupInformation ugi = UserGroupInformation.createUserForTesting("Zork",
+    // new String [] {"ZorkGroup"});
+    // return ugi;
   }
   
   public void testDefaultQueueConfiguration() {
