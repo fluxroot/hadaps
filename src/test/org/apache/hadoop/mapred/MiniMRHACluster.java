@@ -36,6 +36,8 @@ public class MiniMRHACluster {
   private static final Log LOG = 
     LogFactory.getLog(MiniMRHACluster.class);
 
+  public static final String LOGICAL_NAME = "logicaljt";
+
   private Configuration conf; // client and tt configuration
   private List<JobTrackerHADaemon> jtHaDaemonList = new ArrayList<JobTrackerHADaemon>();
 
@@ -78,7 +80,6 @@ public class MiniMRHACluster {
   }
   
   public static void configureLogicalName(Configuration conf) {
-    String logicalName = "logicaljt";
     String jt1Id = "jt1";
     String jt2Id = "jt2";
     
@@ -95,22 +96,22 @@ public class MiniMRHACluster {
     String jt1HttpRedirectAddress = "localhost:50030";
     String jt2HttpRedirectAddress = "localhost:50031";
     
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_RPC_ADDRESS_KEY, logicalName, jt1Id), jt1Address);
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_RPC_ADDRESS_KEY, logicalName, jt2Id), jt2Address);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_RPC_ADDRESS_KEY, LOGICAL_NAME, jt1Id), jt1Address);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_RPC_ADDRESS_KEY, LOGICAL_NAME, jt2Id), jt2Address);
     
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, logicalName, jt1Id), jt1HaAddress);
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, logicalName, jt2Id), jt2HaAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, LOGICAL_NAME, jt1Id), jt1HaAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, LOGICAL_NAME, jt2Id), jt2HaAddress);
 
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_HTTP_ADDRESS_KEY, logicalName, jt1Id), jt1HttpAddress);
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_HTTP_ADDRESS_KEY, logicalName, jt2Id), jt2HttpAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_HTTP_ADDRESS_KEY, LOGICAL_NAME, jt1Id), jt1HttpAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_JOBTRACKER_HTTP_ADDRESS_KEY, LOGICAL_NAME, jt2Id), jt2HttpAddress);
 
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_HTTP_REDIRECT_ADDRESS_KEY, logicalName, jt1Id), jt1HttpRedirectAddress);
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_HTTP_REDIRECT_ADDRESS_KEY, logicalName, jt2Id), jt2HttpRedirectAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_HTTP_REDIRECT_ADDRESS_KEY, LOGICAL_NAME, jt1Id), jt1HttpRedirectAddress);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKER_HTTP_REDIRECT_ADDRESS_KEY, LOGICAL_NAME, jt2Id), jt2HttpRedirectAddress);
 
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKERS_KEY_PREFIX, logicalName), jt1Id + "," + jt2Id);
-    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_CLIENT_FAILOVER_PROXY_PROVIDER_KEY_PREFIX, logicalName), ConfiguredFailoverProxyProvider.class.getName());
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_HA_JOBTRACKERS_KEY_PREFIX, LOGICAL_NAME), jt1Id + "," + jt2Id);
+    conf.set(HAUtil.addKeySuffixes(HAUtil.MR_CLIENT_FAILOVER_PROXY_PROVIDER_KEY_PREFIX, LOGICAL_NAME), ConfiguredFailoverProxyProvider.class.getName());
     
-    conf.set(HAUtil.MR_JOBTRACKER_ADDRESS_KEY, logicalName);
+    conf.set(HAUtil.MR_JOBTRACKER_ADDRESS_KEY, LOGICAL_NAME);
   }
   
   // Wait until at least one JT is active

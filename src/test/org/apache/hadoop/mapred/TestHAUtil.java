@@ -21,6 +21,7 @@ package org.apache.hadoop.mapred;
 import static org.apache.hadoop.mapred.HAUtil.MR_HA_JOBTRACKERS_KEY_PREFIX;
 import static org.apache.hadoop.mapred.HAUtil.MR_JOBTRACKER_ADDRESS_KEY;
 import static org.apache.hadoop.mapred.HAUtil.MR_HA_JOBTRACKER_ID_KEY;
+import static org.apache.hadoop.mapred.HAUtil.MR_HA_JOBTRACKER_RPC_ADDRESS_KEY;
 import static org.apache.hadoop.mapred.HAUtil.MR_JOBTRACKER_RPC_ADDRESS_KEY;
 import static org.apache.hadoop.mapred.HAUtil.addKeySuffixes;
 import static org.apache.hadoop.mapred.HAUtil.getHaJtRpcAddresses;
@@ -28,10 +29,12 @@ import static org.apache.hadoop.mapred.HAUtil.getJobTrackerId;
 import static org.apache.hadoop.mapred.HAUtil.getJobTrackerIdOfOtherNode;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 
@@ -78,7 +81,14 @@ public class TestHAUtil {
     assertEquals("Honors " + MR_HA_JOBTRACKER_ID_KEY + " if set",
         "jt1", getJobTrackerId(conf));
   }
-  
+
+  @Test(expected = HadoopIllegalArgumentException.class)
+  public void testGetJobTrackerIdWithNoMatch() throws Exception {
+    // change conf so neither jt1 nor jt2 match
+    conf.set(addKeySuffixes(MR_JOBTRACKER_RPC_ADDRESS_KEY, "logicalName", "jt2"), "2.3.4.5:8022");
+    getJobTrackerId(conf);
+  }
+
   @Test
   public void testGetJobTrackerIdOfOtherNode() throws Exception {
     assertEquals(MR_HA_JOBTRACKER_ID_KEY + " not set", "jt1",
@@ -86,6 +96,20 @@ public class TestHAUtil {
     conf.set(MR_HA_JOBTRACKER_ID_KEY, "jt1");
     assertEquals(MR_HA_JOBTRACKER_ID_KEY + " set", "jt2",
         getJobTrackerIdOfOtherNode(conf));
+  }
+
+  @Test
+  public void testGetJtHaRpcAddress() throws Exception {
+    final String JT1_HA_ADDRESS = "1.2.3.4:10000";
+    final String JT2_HA_ADDRESS = "localhost:10000";
+    conf.set(addKeySuffixes(MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, "logicalName", "jt1"), JT1_HA_ADDRESS);
+    conf.set(addKeySuffixes(MR_HA_JOBTRACKER_RPC_ADDRESS_KEY, "logicalName", "jt2"), JT2_HA_ADDRESS);
+    assertEquals("Matches localhost when " + MR_HA_JOBTRACKER_ID_KEY +
+        " not set", "localhost",
+        HAUtil.getJtHaRpcAddress(conf).getHostName());
+    conf.set(MR_HA_JOBTRACKER_ID_KEY, "jt1");
+    assertEquals("Honors " + MR_HA_JOBTRACKER_ID_KEY + " if set",
+        "1.2.3.4", HAUtil.getJtHaRpcAddress(conf).getHostName());
   }
 
 }

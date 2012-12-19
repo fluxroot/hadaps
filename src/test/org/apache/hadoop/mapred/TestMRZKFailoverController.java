@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.mapred;
 
+import static org.apache.hadoop.mapred.HAUtil.addKeySuffixes;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -69,8 +70,9 @@ public class TestMRZKFailoverController extends ClientBaseWithFixes {
   
   @Before
   public void setup() throws Exception {
+    String logicalName = MiniMRHACluster.LOGICAL_NAME;
     conf = new Configuration();
-    conf.set(ZKFailoverController.ZK_QUORUM_KEY + ".logicaljt", hostPort);
+    conf.set(addKeySuffixes(ZKFailoverController.ZK_QUORUM_KEY, logicalName), hostPort);
     conf.set(HAUtil.MR_HA_FENCING_METHODS_KEY,
         AlwaysSucceedFencer.class.getName());
     conf.setBoolean(HAUtil.MR_HA_AUTO_FAILOVER_ENABLED_KEY, true);
@@ -81,8 +83,8 @@ public class TestMRZKFailoverController extends ClientBaseWithFixes {
         CommonConfigurationKeysPublic.IPC_CLIENT_CONNECTION_MAXIDLETIME_KEY,
         0);
     
-    conf.setInt(HAUtil.MR_HA_ZKFC_PORT_KEY + ".logicaljt.jt1", 10003);
-    conf.setInt(HAUtil.MR_HA_ZKFC_PORT_KEY + ".logicaljt.jt2", 10004);
+    conf.setInt(addKeySuffixes(HAUtil.MR_HA_ZKFC_PORT_KEY, logicalName, "jt1"), 10003);
+    conf.setInt(addKeySuffixes(HAUtil.MR_HA_ZKFC_PORT_KEY, logicalName, "jt2"), 10004);
 
     cluster = new MiniMRHACluster(conf);
 

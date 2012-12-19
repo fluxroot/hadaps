@@ -114,14 +114,15 @@ public class MRZKFailoverController extends ZKFailoverController {
   
   public static MRZKFailoverController create(Configuration conf) {
     Configuration localJTConf = MRHAAdmin.addSecurityConfiguration(conf);
-    
-    if (!HAUtil.isHAEnabled(localJTConf, HAUtil.getLogicalName(localJTConf))) {
+
+    String logicalName = HAUtil.getLogicalName(localJTConf);
+    if (!HAUtil.isHAEnabled(localJTConf, logicalName)) {
       throw new HadoopIllegalArgumentException(
           "HA is not enabled for this jobtracker.");
     }
     String jtId = HAUtil.getJobTrackerId(localJTConf);
-    HAUtil.setGenericConf(localJTConf, "logicaljt", jtId, HAUtil.JOB_TRACKER_SPECIFIC_KEYS);
-    HAUtil.setGenericConf(localJTConf, "logicaljt", jtId, ZKFC_CONF_KEYS);
+    HAUtil.setGenericConf(localJTConf, logicalName, jtId, HAUtil.JOB_TRACKER_SPECIFIC_KEYS);
+    HAUtil.setGenericConf(localJTConf, logicalName, jtId, ZKFC_CONF_KEYS);
     
     JobTrackerHAServiceTarget localTarget = new JobTrackerHAServiceTarget(
         localJTConf, jtId);

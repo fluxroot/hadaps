@@ -226,7 +226,13 @@ public class HAUtil {
       }
     }
 
-    if (found > 1) { // Only one address must match the local address
+    // Only one address must match the local address
+    if (found == 0) {
+      String msg = "Configuration has no addresses that match "
+          + "local node's address. Please configure the system with "
+          + MR_HA_JOBTRACKER_ID_KEY;
+      throw new HadoopIllegalArgumentException(msg);
+    } else if (found > 1) {
       String msg = "Configuration has multiple addresses that match "
           + "local node's address. Please configure the system with "
           + MR_HA_JOBTRACKER_ID_KEY;
@@ -273,10 +279,7 @@ public class HAUtil {
   
   private static String getKey(String prefix, Configuration conf) {
     String logicalName = getLogicalName(conf);
-    String jtId = conf.get(MR_HA_JOBTRACKER_ID_KEY);
-    if (jtId == null) {
-      throw new IllegalArgumentException(MR_HA_JOBTRACKER_ID_KEY + " not set.");
-    }
+    String jtId = getJobTrackerId(conf);
     return addKeySuffixes(prefix, logicalName, jtId);
   }
   
