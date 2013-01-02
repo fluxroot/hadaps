@@ -55,7 +55,16 @@ public class TestHAUtil {
     conf.set(addKeySuffixes(MR_JOBTRACKER_RPC_ADDRESS_KEY, "logicalName", "jt1"), JT1_ADDRESS);
     conf.set(addKeySuffixes(MR_JOBTRACKER_RPC_ADDRESS_KEY, "logicalName", "jt2"), JT2_ADDRESS);
   }
-  
+
+  @Test
+  public void testGetLogicalNameIgnoresPort() {
+    Configuration c = new Configuration();
+    c.set(MR_JOBTRACKER_ADDRESS_KEY, "myjt");
+    assertEquals("myjt", HAUtil.getLogicalName(c));
+    c.set(MR_JOBTRACKER_ADDRESS_KEY, "myjt:8021");
+    assertEquals("myjt", HAUtil.getLogicalName(c));
+  }
+
   @Test
   public void testGetHaJtRpcAddresses() throws Exception {
     Map<String, Map<String, InetSocketAddress>> map =

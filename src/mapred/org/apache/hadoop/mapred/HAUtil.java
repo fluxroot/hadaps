@@ -122,7 +122,9 @@ public class HAUtil {
   }
   
   public static String getLogicalName(Configuration conf) {
-    return conf.get(MR_JOBTRACKER_ADDRESS_KEY);
+    String jt = conf.get(MR_JOBTRACKER_ADDRESS_KEY);
+    int index = jt.indexOf(":");
+    return index == -1 ? jt : jt.substring(0, index);
   }
   
   /**
