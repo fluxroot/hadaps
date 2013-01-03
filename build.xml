@@ -651,6 +651,9 @@
         <provider classname="org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier$Renewer"/>
         <provider classname="org.apache.hadoop.hdfs.HftpFileSystem$TokenManager"/>
       </service>
+      <service type="org.apache.hadoop.security.token.TokenIdentifier">
+        <provider classname="org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier"/>
+      </service>
       <fileset dir="${conf.dir}" includes="${jar.properties.list}" />
       <fileset file="${jar.extra.properties.list}" />
       <zipfileset dir="${build.webapps}" prefix="webapps"/>
