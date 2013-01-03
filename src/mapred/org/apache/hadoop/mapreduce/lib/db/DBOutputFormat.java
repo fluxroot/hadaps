@@ -222,7 +222,7 @@ extends OutputFormat<K,V> {
   private static DBConfiguration setOutput(Job job,
       String tableName) throws IOException {
     job.setOutputFormatClass(DBOutputFormat.class);
-    job.getConfiguration().setBoolean("mapred.reduce.tasks.speculative.execution", false);
+    job.setReduceSpeculativeExecution(false);
 
     DBConfiguration dbConf = new DBConfiguration(job.getConfiguration());
     
