@@ -4254,8 +4254,10 @@ public class JobTracker implements MRConstants, JTProtocols, JobTrackerMXBean {
       report.setTaskTracker(trackerName);
       TaskAttemptID taskId = report.getTaskID();
       
-      // expire it
-      expireLaunchingTasks.removeTask(taskId);
+      // don't expire the task if it is not unassigned
+      if (report.getRunState() != TaskStatus.State.UNASSIGNED) {
+        expireLaunchingTasks.removeTask(taskId);
+      }
       
       JobInProgress job = getJob(taskId.getJobID());
       if (job == null) {
