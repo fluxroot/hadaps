@@ -19,9 +19,13 @@
 package org.apache.hadoop.mapred;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.URL;
 
 import org.apache.commons.logging.Log;
@@ -38,6 +42,13 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.mapred.ConfiguredFailoverProxyProvider;
 import org.apache.hadoop.mapreduce.Cluster.JobTrackerStatus;
 import org.junit.*;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Tests web UI redirect from standby to active jobtracker.
@@ -100,6 +111,86 @@ public class TestHAWebUI {
     URL url = new URL("http://" + redirectAddress + "/jobtracker.jsp");
     String page = DFSTestUtil.urlGet(url);
     assertTrue(page.contains("Hadoop Map/Reduce Administration"));
+  }
+
+  public static class OKServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+      throws ServletException, IOException {
+      resp.setStatus(HttpServletResponse.SC_OK);
+    }
+  }
+
+  private Server createJettyServer() throws Exception {
+    InetAddress localhost = InetAddress.getByName("localhost");
+    String host = "localhost";
+    ServerSocket ss = new ServerSocket(0, 50, localhost);
+    int port = ss.getLocalPort();
+    ss.close();
+    Server server = new Server(0);
+    server.getConnectors()[0].setHost(host);
+    server.getConnectors()[0].setPort(port);
+    return server;
+  }
+
+  private URL getJettyURL(Server server) throws Exception {
+    if (server == null) {
+      throw new IllegalStateException("This test does not use @TestJetty");
+    }
+    return new URL("http://" + server.getConnectors()[0].getHost() + ":" + 
+      server.getConnectors()[0].getPort());
+  }
+
+  private void testRedirect(Class firstServletClass, Class secondServlet,
+                            int expectedResponse) throws Exception {
+    Server server1 = null;
+    Server server2 = null;
+    try {
+      server1 = createJettyServer();
+      server2 = createJettyServer();
+
+      Context context = new Context();
+      context.setContextPath("/");
+      context.addServlet(firstServletClass, "/*");
+      context.setAttribute(JobTrackerHAHttpRedirector.ACTIVE_JOBTRACKER_BASEURL,
+        getJettyURL(server2).toExternalForm());
+      server1.addHandler(context);
+
+      context = new Context();
+      context.setContextPath("/");
+      context.addServlet(secondServlet, "/*");
+      context.setAttribute(JobTrackerHAHttpRedirector.ACTIVE_JOBTRACKER_BASEURL,
+        getJettyURL(server1).toExternalForm());
+      server2.addHandler(context);
+
+      server1.start();
+      server2.start();
+
+      URL url = new URL(getJettyURL(server1), "/bar");
+      HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+      assertEquals(expectedResponse, conn.getResponseCode());
+
+    } finally {
+      if (server1 != null) {
+        server1.stop();
+      }
+      if (server2 != null) {
+        server1.stop();
+      }
+    }
+  }
+
+  @Test
+  public void redirectOK() throws Exception {
+    testRedirect(JobTrackerHAHttpRedirector.RedirectorServlet.class,
+      OKServlet.class, HttpServletResponse.SC_OK);
+  }
+
+  @Test
+  public void redirectLoop() throws Exception {
+    testRedirect(JobTrackerHAHttpRedirector.RedirectorServlet.class,
+      JobTrackerHAHttpRedirector.RedirectorServlet.class,
+      HttpServletResponse.SC_SERVICE_UNAVAILABLE);
   }
 
 }

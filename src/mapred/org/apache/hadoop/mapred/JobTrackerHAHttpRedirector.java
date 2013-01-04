@@ -37,7 +37,7 @@ public class JobTrackerHAHttpRedirector {
   private static final Log LOG =
     LogFactory.getLog(JobTrackerHAHttpRedirector.class);
 
-  private static final String ACTIVE_JOBTRACKER_BASEURL =
+  static final String ACTIVE_JOBTRACKER_BASEURL =
     "mapred.ha.active.jobtracker.baseurl";
 
   private Configuration conf;
@@ -102,6 +102,8 @@ public class JobTrackerHAHttpRedirector {
   public static class RedirectorServlet extends HttpServlet {
     private String baseURL;
 
+    private static final String REDIR_COUNT = "redirCount";
+    
     @Override
     public void init() {
       baseURL = (String)
@@ -111,13 +113,20 @@ public class JobTrackerHAHttpRedirector {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
-      StringBuilder sb = new StringBuilder(baseURL);
-      sb.append(req.getRequestURI());
-      String queryString = req.getQueryString();
-      if (queryString != null) {
-        sb.append("?").append(queryString);
+      String redirCountStr = req.getParameter(REDIR_COUNT);
+      int redirCount = ((redirCountStr == null) ? 0 : Integer.parseInt(redirCountStr)) + 1;
+      if (redirCount == 1) {
+        StringBuilder sb = new StringBuilder(baseURL);
+        sb.append(req.getRequestURI());
+        String queryString = req.getQueryString();
+        if (queryString != null) {
+          sb.append("?").append(queryString);
+        }
+        sb.append((queryString == null) ? "?" : "&").append(REDIR_COUNT).append("=").append(redirCount);
+        resp.sendRedirect(sb.toString());
+      } else {
+        resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "None of the JobTrackers is active");
       }
-      resp.sendRedirect(sb.toString());
     }
   }
 
