@@ -114,17 +114,17 @@ public class HAUtil {
    * @return true if HA is configured in the configuration; else false.
    */
   public static boolean isHAEnabled(Configuration conf, String jtAddress) {
-    Map<String, Map<String, InetSocketAddress>> addresses =
-      getHaJtRpcAddresses(conf);
-    if (addresses == null) return false;
-    Map<String, InetSocketAddress> jtMap = addresses.get(jtAddress);
-    return jtMap != null && jtMap.size() > 1;
+    Map<String, InetSocketAddress> jtMap = getHaJtRpcAddresses(conf);
+    return (jtMap != null && jtMap.size() > 1);
+  }
+
+  public static String getLogicalName(String jtAddress) {
+    int index = jtAddress.indexOf(":");
+    return index == -1 ? jtAddress : jtAddress.substring(0, index);
   }
   
   public static String getLogicalName(Configuration conf) {
-    String jt = conf.get(MR_JOBTRACKER_ADDRESS_KEY);
-    int index = jt.indexOf(":");
-    return index == -1 ? jt : jt.substring(0, index);
+    return getLogicalName(conf.get(MR_JOBTRACKER_ADDRESS_KEY));
   }
   
   /**
@@ -255,12 +255,11 @@ public class HAUtil {
     }
   }
 
-  public static Map<String, Map<String, InetSocketAddress>> getHaJtRpcAddresses(
+  public static Map<String, InetSocketAddress> getHaJtRpcAddresses(
       Configuration conf) {
     
     // For JT HA there can only be one logical name (unlike HDFS)
     String logicalName = getLogicalName(conf);
-    Map<String, Map<String, InetSocketAddress>> ret = Maps.newHashMap();
     Map<String, InetSocketAddress> map = Maps.newHashMap();
     for (String jtId : getJtServiceIds(conf, logicalName)) {
       String address = conf.get(
@@ -268,8 +267,7 @@ public class HAUtil {
       InetSocketAddress isa = NetUtils.createSocketAddr(address);
       map.put(jtId, isa);
     }
-    ret.put(logicalName, map);
-    return ret;
+    return map;
   }
 
   private static Collection<String> getJtServiceIds(Configuration conf,

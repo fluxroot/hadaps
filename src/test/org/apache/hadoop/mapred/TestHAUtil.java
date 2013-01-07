@@ -67,11 +67,7 @@ public class TestHAUtil {
 
   @Test
   public void testGetHaJtRpcAddresses() throws Exception {
-    Map<String, Map<String, InetSocketAddress>> map =
-      getHaJtRpcAddresses(conf);
-    assertEquals(1, map.size());
-    
-    Map<String, InetSocketAddress> jtMap = map.get("logicalName");
+    Map<String, InetSocketAddress> jtMap = getHaJtRpcAddresses(conf);
     assertEquals(2, jtMap.size());
     InetSocketAddress addr = jtMap.get("jt1");
     assertEquals("1.2.3.4", addr.getHostName());

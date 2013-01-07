@@ -84,9 +84,8 @@ public class ConfiguredFailoverProxyProvider<T> implements
     try {
       ugi = UserGroupInformation.getCurrentUser();
       
-      Map<String, Map<String, InetSocketAddress>> map = HAUtil.getHaJtRpcAddresses(
+      Map<String, InetSocketAddress> addressesInJT = HAUtil.getHaJtRpcAddresses(
           conf);
-      Map<String, InetSocketAddress> addressesInJT = map.get(jtAddress);
       
       if (addressesInJT == null || addressesInJT.size() == 0) {
         throw new RuntimeException("Could not find any configured addresses " +

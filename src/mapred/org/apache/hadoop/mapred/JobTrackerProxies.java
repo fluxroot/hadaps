@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.retry.DefaultFailoverProxyProvider;
 import org.apache.hadoop.io.retry.FailoverProxyProvider;
@@ -109,8 +110,9 @@ public class JobTrackerProxies {
     if (jtAddress == null) {
       return null;
     }
-    String configKey = HAUtil.MR_CLIENT_FAILOVER_PROXY_PROVIDER_KEY_PREFIX +
-      "." + jtAddress;
+    String configKey = DFSUtil.addKeySuffixes(
+        HAUtil.MR_CLIENT_FAILOVER_PROXY_PROVIDER_KEY_PREFIX,
+        HAUtil.getLogicalName(jtAddress));
     return (Class<FailoverProxyProvider<T>>)
       conf.getClass(configKey, null, FailoverProxyProvider.class);
   }
