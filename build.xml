@@ -833,7 +833,7 @@
     <sequential>
       <delete dir="@{test.dir}/data" />
       <mkdir dir="@{test.dir}/data" />
-      <delete dir="@{test.dir}/logs" />
+      <delete dir="@{test.dir}/logs" followSymlinks="false"/>
       <mkdir dir="@{test.dir}/logs" />
       <copy file="${test.src.dir}/hadoop-policy.xml"
             todir="@{test.dir}/extraconf" />
@@ -1457,7 +1457,7 @@
   <!-- Clean.  Delete the build files, and their directories              -->
   <!-- ================================================================== -->
   <target name="clean" depends="clean-contrib, clean-sign" description="Clean.  Delete the build files, and their directories">
-    <delete dir="${build.dir}"/>
+    <delete dir="${build.dir}" followSymlinks="false"/>
     <delete dir="${docs.src}/build"/>
     <delete file="${basedir}/build.properties" />
   </target>
