@@ -221,7 +221,7 @@ public class FileOutputCommitter extends OutputCommitter {
    * Delete the work directory
    */
   @Override
-  public void abortTask(TaskAttemptContext context) {
+  public void abortTask(TaskAttemptContext context) throws IOException{
     try {
       if (workPath != null) { 
         context.progress();
