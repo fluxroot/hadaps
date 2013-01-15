@@ -303,7 +303,8 @@ interface JobSubmissionProtocol extends VersionedProtocol {
    * @return the new expiration time
    * @throws IOException
    * @throws InterruptedException
-   */ 
+   */
+  @Idempotent
   public long renewDelegationToken(Token<DelegationTokenIdentifier> token
                                    ) throws IOException,
                                             InterruptedException;

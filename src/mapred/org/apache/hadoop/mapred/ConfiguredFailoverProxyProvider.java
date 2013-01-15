@@ -19,9 +19,7 @@ package org.apache.hadoop.mapred;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,14 +29,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.ha.HAServiceProtocol;
 import org.apache.hadoop.io.retry.FailoverProxyProvider;
 import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 /**
  * A FailoverProxyProvider implementation which allows one to configure two URIs
@@ -97,7 +92,11 @@ public class ConfiguredFailoverProxyProvider<T> implements
         proxies.add(new AddressRpcProxyPair<T>(address));
       }
 
-    } catch (IOException e) {
+      // The client may have a delegation token set for the logical
+      // URI of the cluster. Clone this token to apply to each of the
+      // underlying IPC addresses so that the IPC code can find it.
+      HAUtil.cloneDelegationTokenForLogicalAddress(ugi, jtAddress, addressesOfJTs);    
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }

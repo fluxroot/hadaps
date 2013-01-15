@@ -23,20 +23,14 @@ import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.retry.DefaultFailoverProxyProvider;
 import org.apache.hadoop.io.retry.FailoverProxyProvider;
 import org.apache.hadoop.io.retry.RetryPolicies;
-import org.apache.hadoop.io.retry.RetryPolicy;
 import org.apache.hadoop.io.retry.RetryProxy;
 import org.apache.hadoop.ipc.*;
 import org.apache.hadoop.net.NetUtils;
@@ -100,7 +94,7 @@ public class JobTrackerProxies {
               maxFailoverAttempts, failoverSleepBaseMillis,
               failoverSleepMaxMillis));
       
-      Text dtService = new Text(jtAddress);
+      Text dtService = HAUtil.buildTokenServiceForLogicalAddress(jtAddress);
       return new ProxyAndInfo<T>(proxy, dtService);
     }
   }

@@ -563,13 +563,23 @@ public class JobClient extends Configured implements MRConstants, Tool  {
       return DelegationTokenIdentifier.MAPREDUCE_DELEGATION_KIND.equals(kind);
     }
 
+    private JobSubmissionProtocol createJTProxy(Token<?> token, Configuration conf) 
+      throws IOException {
+      JobSubmissionProtocol jt;
+      String addr = HAUtil.getServiceAddressFromToken(token);
+      if (HAUtil.isTokenForLogicalAddress(token))  {
+        jt = createRPCProxy(NetUtils.createSocketAddr(conf.get("mapred.job.tracker")), conf);
+      } else {
+        jt = createRPCProxy(NetUtils.createSocketAddr(addr), conf);
+      }
+      return jt;
+    }
+    
     @SuppressWarnings("unchecked")
     @Override
     public long renew(Token<?> token, Configuration conf
                       ) throws IOException, InterruptedException {
-      InetSocketAddress addr = 
-          NetUtils.createSocketAddr(token.getService().toString());
-      JobSubmissionProtocol jt = createRPCProxy(addr, conf);
+      JobSubmissionProtocol jt = createJTProxy(token, conf);
       return jt.renewDelegationToken((Token<DelegationTokenIdentifier>) token);
     }
 
@@ -577,9 +587,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
     @Override
     public void cancel(Token<?> token, Configuration conf
                        ) throws IOException, InterruptedException {
-      InetSocketAddress addr = 
-          NetUtils.createSocketAddr(token.getService().toString());
-      JobSubmissionProtocol jt = createRPCProxy(addr, conf);
+      JobSubmissionProtocol jt = createJTProxy(token, conf);
       jt.cancelDelegationToken((Token<DelegationTokenIdentifier>) token);
     }
 
@@ -2090,13 +2098,18 @@ public class JobClient extends Configured implements MRConstants, Tool  {
     getDelegationToken(Text renewer) throws IOException, InterruptedException {
     Token<DelegationTokenIdentifier> result =
       jobSubmitClient.getDelegationToken(renewer);
-    InetSocketAddress addr = JobTracker.getAddress(getConf());
-    StringBuilder service = new StringBuilder();
-    service.append(NetUtils.normalizeHostName(addr.getAddress().
-                                              getHostAddress()));
-    service.append(':');
-    service.append(addr.getPort());
-    result.setService(new Text(service.toString()));
+    String jtAddress = getConf().get("mapred.job.tracker");
+    if (!HAUtil.isHAEnabled(getConf(), jtAddress)) {
+      InetSocketAddress addr = JobTracker.getAddress(getConf());
+      StringBuilder service = new StringBuilder();
+      service.append(NetUtils.normalizeHostName(addr.getAddress().
+                                                getHostAddress()));
+      service.append(':');
+      service.append(addr.getPort());
+      result.setService(new Text(service.toString()));
+    } else {
+      result.setService(HAUtil.buildTokenServiceForLogicalAddress(jtAddress));      
+    }
     return result;
   }
 

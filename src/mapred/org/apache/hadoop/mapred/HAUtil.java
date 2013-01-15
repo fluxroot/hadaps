@@ -32,8 +32,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
+import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenSelector;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 
 public class HAUtil {
   
@@ -335,6 +340,63 @@ public class HAUtil {
       if (value != null) {
         conf.set(key, value);
       }
+    }
+  }
+
+  /**
+   * A prefix put before the jobtracker address inside the "service" field
+   * of a delegation token, indicating that the address is a logical (HA)
+   * address.
+   */
+  public static final String HA_DT_SERVICE_PREFIX = "ha-jt:";
+
+  private static final DelegationTokenSelector tokenSelector =
+    new DelegationTokenSelector();
+
+  /**
+   * Get the service name used in the delegation token for the given logical
+   * HA service.
+   * @param haJtAddress the logical URI of the cluster
+   * @return the service name
+   */
+  public static Text buildTokenServiceForLogicalAddress(String haJtAddress) {
+    return new Text(HA_DT_SERVICE_PREFIX + haJtAddress);
+  }
+
+  /**
+   * @return true if this token corresponds to a logical address
+   * rather than a specific jobtracker.
+   */
+  public static boolean isTokenForLogicalAddress(
+    Token<?> token) {
+    return token.getService().toString().startsWith(HA_DT_SERVICE_PREFIX);
+  }
+
+  public static String getServiceAddressFromToken(Token<?> token) {
+    String service = token.getService().toString();
+    return isTokenForLogicalAddress(token) 
+      ? service.substring(HA_DT_SERVICE_PREFIX.length()) : service;
+  }
+  
+  public static void cloneDelegationTokenForLogicalAddress(
+    UserGroupInformation ugi, String haJtAddress,
+    Collection<InetSocketAddress> jtAddresses) {
+    Text haService = HAUtil.buildTokenServiceForLogicalAddress(haJtAddress);
+    Token<DelegationTokenIdentifier> haToken =
+      tokenSelector.selectToken(haService, ugi.getTokens());
+    
+    if (haToken != null) {
+      for (InetSocketAddress singleJtAddr : jtAddresses) {
+        Token<DelegationTokenIdentifier> specificToken =
+          new Token<DelegationTokenIdentifier>(haToken);
+        SecurityUtil.setTokenService(specificToken, singleJtAddr);
+        ugi.addToken(specificToken);
+        LOG.debug("Mapped HA service delegation token for logical address " +
+          haJtAddress + " to jt " + singleJtAddr);
+      }
+    } else {
+      LOG.debug("No HA service delegation token found for logical address " +
+        haJtAddress);
     }
   }
 
