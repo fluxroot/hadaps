@@ -428,9 +428,9 @@ public class NameNodeProxies {
     try {
       Constructor<FailoverProxyProvider<T>> ctor = failoverProxyProviderClass
           .getConstructor(Configuration.class, URI.class, Class.class);
-      FailoverProxyProvider<T> provider = ctor.newInstance(conf, nameNodeUri,
+      FailoverProxyProvider<?> provider = ctor.newInstance(conf, nameNodeUri,
           xface);
-      return provider;
+      return (FailoverProxyProvider<T>) provider;
     } catch (Exception e) {
       String message = "Couldn't create proxy provider " + failoverProxyProviderClass;
       if (LOG.isDebugEnabled()) {
