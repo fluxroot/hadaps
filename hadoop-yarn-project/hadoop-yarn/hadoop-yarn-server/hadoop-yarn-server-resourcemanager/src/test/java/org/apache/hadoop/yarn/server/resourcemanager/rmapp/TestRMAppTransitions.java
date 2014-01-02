@@ -575,7 +575,9 @@ public class TestRMAppTransitions {
         RMAppEventType.KILL);
     application.handle(event);
     rmDispatcher.await();
-    assertAppAndAttemptKilled(application);
+    sendAppUpdateSavedEvent(application);
+    assertKilled(application);
+    assertAppFinalStateSaved(application);
   }
 
   @Test
@@ -590,7 +592,7 @@ public class TestRMAppTransitions {
           new RMAppFailedAttemptEvent(application.getApplicationId(), 
               RMAppEventType.ATTEMPT_FAILED, "");
       application.handle(event);
-      assertAppState(RMAppState.SUBMITTED, application);
+      assertAppState(RMAppState.ACCEPTED, application);
       event = 
           new RMAppEvent(application.getApplicationId(), 
               RMAppEventType.APP_ACCEPTED);
@@ -621,7 +623,9 @@ public class TestRMAppTransitions {
         RMAppEventType.KILL);
     application.handle(event);
     rmDispatcher.await();
-    assertAppAndAttemptKilled(application);
+    sendAppUpdateSavedEvent(application);
+    assertKilled(application);
+    assertAppFinalStateSaved(application);
   }
 
   @Test
@@ -663,7 +667,7 @@ public class TestRMAppTransitions {
               RMAppEventType.ATTEMPT_FAILED, "");
       application.handle(event);
       rmDispatcher.await();
-      assertAppState(RMAppState.SUBMITTED, application);
+      assertAppState(RMAppState.ACCEPTED, application);
       appAttempt = application.getCurrentAppAttempt();
       Assert.assertEquals(++expectedAttemptId, 
           appAttempt.getAppAttemptId().getAttemptId());

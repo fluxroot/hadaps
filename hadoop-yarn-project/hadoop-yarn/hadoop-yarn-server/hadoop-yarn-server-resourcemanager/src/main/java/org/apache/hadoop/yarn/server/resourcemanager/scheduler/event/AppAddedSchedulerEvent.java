@@ -16,29 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.yarn.server.resourcemanager.rmapp;
+package org.apache.hadoop.yarn.server.resourcemanager.scheduler.event;
 
-public enum RMAppEventType {
-  // Source: ClientRMService
-  START,
-  RECOVER,
-  KILL,
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 
-  // Source: Scheduler
-  APP_REJECTED,
+public class AppAddedSchedulerEvent extends SchedulerEvent {
 
-  // Source: Scheduler
-  APP_ACCEPTED,
+  private final ApplicationId applicationId;
+  private final String queue;
+  private final String user;
 
-  // Source: RMAppAttempt
-  ATTEMPT_REGISTERED,
-  ATTEMPT_UNREGISTERED,
-  ATTEMPT_FINISHED, // Will send the final state
-  ATTEMPT_FAILED,
-  ATTEMPT_KILLED,
-  NODE_UPDATE,
+  public AppAddedSchedulerEvent(
+      ApplicationId applicationId, String queue, String user) {
+    super(SchedulerEventType.APP_ADDED);
+    this.applicationId = applicationId;
+    this.queue = queue;
+    this.user = user;
+  }
 
-  // Source: RMStateStore
-  APP_NEW_SAVED,
-  APP_UPDATE_SAVED,
+  public ApplicationId getApplicationId() {
+    return applicationId;
+  }
+
+  public String getQueue() {
+    return queue;
+  }
+
+  public String getUser() {
+    return user;
+  }
+
 }
