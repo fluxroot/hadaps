@@ -133,7 +133,8 @@ public class CgroupsLCEResourcesHandler implements LCEResourcesHandler {
     return controllerPath + "/" + cgroupPrefix + "/" + groupName;
   }
 
-  private void createCgroup(String controller, String groupName)
+  @VisibleForTesting
+  void createCgroup(String controller, String groupName)
         throws IOException {
     String path = pathForCgroup(controller, groupName);
 
@@ -146,7 +147,8 @@ public class CgroupsLCEResourcesHandler implements LCEResourcesHandler {
     }
   }
 
-  private void updateCgroup(String controller, String groupName, String param,
+  @VisibleForTesting
+  void updateCgroup(String controller, String groupName, String param,
                             String value) throws IOException {
     FileWriter f = null;
     String path = pathForCgroup(controller, groupName);
@@ -205,14 +207,18 @@ public class CgroupsLCEResourcesHandler implements LCEResourcesHandler {
   /*
    * Next three functions operate on all the resources we are enforcing.
    */
-
-  private void setupLimits(ContainerId containerId,
+  // package private for testing purposes
+  public void setupLimits(ContainerId containerId,
                            Resource containerResource) throws IOException {
     String containerName = containerId.toString();
 
     if (isCpuWeightEnabled()) {
       createCgroup(CONTROLLER_CPU, containerName);
       int cpuShares = CPU_DEFAULT_WEIGHT * containerResource.getVirtualCores();
+
+      // absolute minimum of 10 shares for zero CPU containers
+      cpuShares = Math.max(cpuShares, 10);
+
       updateCgroup(CONTROLLER_CPU, containerName, "shares",
           String.valueOf(cpuShares));
     }

@@ -632,6 +632,10 @@ public class ContainerImpl implements Container {
       // resource usage.
       long pmemBytes =
           container.getResource().getMemory() * 1024 * 1024L;
+
+      // absolute minimum of 5MB for zero memory containers
+      pmemBytes = Math.max(pmemBytes, 5L * 1024 * 1024);
+
       float pmemRatio = container.daemonConf.getFloat(
           YarnConfiguration.NM_VMEM_PMEM_RATIO,
           YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
