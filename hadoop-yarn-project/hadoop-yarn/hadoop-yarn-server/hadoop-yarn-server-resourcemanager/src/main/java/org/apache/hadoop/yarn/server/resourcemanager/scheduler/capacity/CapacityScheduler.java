@@ -488,6 +488,7 @@ public class CapacityScheduler extends AbstractYarnScheduler
     if (application == null){
       // The AppRemovedSchedulerEvent maybe sent on recovery for completed apps,
       // ignore it.
+      LOG.warn("Couldn't find application " + applicationId);
       return;
     }
     CSQueue queue = (CSQueue) application.getQueue();
@@ -497,6 +498,7 @@ public class CapacityScheduler extends AbstractYarnScheduler
     } else {
       queue.finishApplication(applicationId, application.getUser());
     }
+    application.stop(finalState);
     applications.remove(applicationId);
   }
 

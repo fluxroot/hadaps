@@ -362,8 +362,9 @@ public class FifoScheduler extends AbstractYarnScheduler implements
   private synchronized void addApplication(ApplicationId applicationId,
       String queue, String user) {
     SchedulerApplication application =
-        new SchedulerApplication(null, user);
+        new SchedulerApplication(DEFAULT_QUEUE, user);
     applications.put(applicationId, application);
+    metrics.submitApp(user);
     LOG.info("Accepted application " + applicationId + " from user: " + user
         + ", currently num of applications: " + applications.size());
     rmContext.getDispatcher().getEventHandler()
@@ -387,7 +388,7 @@ public class FifoScheduler extends AbstractYarnScheduler implements
     }
     application.setCurrentAppAttempt(schedulerApp);
 
-    metrics.submitApp(user, appAttemptId.getAttemptId());
+    metrics.submitAppAttempt(user);
     LOG.info("Added Application Attempt " + appAttemptId
         + " to scheduler from user " + application.getUser());
     rmContext.getDispatcher().getEventHandler().handle(
@@ -398,10 +399,15 @@ public class FifoScheduler extends AbstractYarnScheduler implements
   private synchronized void doneApplication(ApplicationId applicationId,
       RMAppState finalState) {
     SchedulerApplication application = applications.get(applicationId);
+    if (application == null){
+      LOG.warn("Couldn't find application " + applicationId);
+      return;
+    }
 
     // Inform the activeUsersManager
     activeUsersManager.deactivateApplication(application.getUser(),
       applicationId);
+    application.stop(finalState);
     applications.remove(applicationId);
   }
 
