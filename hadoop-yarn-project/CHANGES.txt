@@ -57,6 +57,10 @@ Release 2.3.0 - 2014-02-18
 
     YARN-1033. Expose RM active/standby state to Web UI and REST API (kasha)
 
+    YARN-1041. Added the ApplicationMasterProtocol API for applications to use the
+    ability in ResourceManager to optionally not kill containers when the
+    ApplicationMaster exits. (Jian He via vinodkv)
+
   IMPROVEMENTS
 
     YARN-305. Fair scheduler logs too many "Node offered to app" messages.
