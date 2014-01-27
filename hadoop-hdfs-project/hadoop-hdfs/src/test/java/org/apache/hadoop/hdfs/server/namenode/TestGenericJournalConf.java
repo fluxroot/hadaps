@@ -32,6 +32,9 @@ import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hdfs.server.common.Storage;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
 import org.junit.Test;
 
 public class TestGenericJournalConf {
@@ -194,6 +197,29 @@ public class TestGenericJournalConf {
     public boolean hasSomeData() throws IOException {
       shouldPromptCalled = true;
       return false;
+    }
+
+    @Override
+    public void doPreUpgrade() throws IOException {}
+
+    @Override
+    public void doUpgrade(Storage storage) throws IOException {}
+
+    @Override
+    public void doFinalize() throws IOException {}
+
+    @Override
+    public boolean canRollBack(StorageInfo storage, StorageInfo prevStorage, int targetLayoutVersion)
+        throws IOException {
+      return false;
+    }
+
+    @Override
+    public void doRollback() throws IOException {}
+
+    @Override
+    public long getJournalCTime() throws IOException {
+      return -1;
     }
   }
 
