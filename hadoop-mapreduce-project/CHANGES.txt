@@ -87,6 +87,9 @@ Release 2.3.0 - 2014-02-18
     RMContainerAllocator$AssignedRequests.preemptReduce() violates the 
     comparator contract (Gera Shegalov via kasha)
 
+    MAPREDUCE-5732. Report proper queue when job has been automatically placed
+    (Sandy Ryza)
+
   OPTIMIZATIONS
 
     MAPREDUCE-4680. Job history cleaner should only check timestamps of files in
