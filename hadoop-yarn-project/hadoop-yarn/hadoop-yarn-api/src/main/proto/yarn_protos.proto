@@ -162,6 +162,7 @@ message ApplicationReportProto {
   optional float progress = 17;
   optional string applicationType = 18;
   optional hadoop.common.TokenProto am_rm_token = 19;
+  repeated string applicationTags = 20;
 }
 
 enum NodeStateProto {
@@ -249,6 +250,7 @@ message ApplicationSubmissionContextProto {
   optional ResourceProto resource = 9;
   optional string applicationType = 10 [default = "YARN"];
   optional bool keep_containers_across_application_attempts = 11 [default = false];
+  repeated string applicationTags = 12;
 }
 
 enum ApplicationAccessTypeProto {

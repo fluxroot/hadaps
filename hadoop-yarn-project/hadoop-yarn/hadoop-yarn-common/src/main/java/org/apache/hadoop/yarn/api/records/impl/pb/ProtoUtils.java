@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
+import org.apache.hadoop.yarn.api.protocolrecords.ApplicationsRequestScope;
 import org.apache.hadoop.yarn.api.records.AMCommand;
 import org.apache.hadoop.yarn.api.records.ApplicationAccessType;
 import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
@@ -48,6 +49,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos.QueueStateProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.YarnApplicationStateProto;
 
 import com.google.protobuf.ByteString;
+import org.apache.hadoop.yarn.proto.YarnServiceProtos;
 
 @Private
 @Unstable
@@ -94,6 +96,18 @@ public class ProtoUtils {
   }
   public static YarnApplicationState convertFromProtoFormat(YarnApplicationStateProto e) {
     return YarnApplicationState.valueOf(e.name());
+  }
+
+  /*
+   * ApplicationsRequestScope
+   */
+  public static YarnServiceProtos.ApplicationsRequestScopeProto
+      convertToProtoFormat(ApplicationsRequestScope e) {
+    return YarnServiceProtos.ApplicationsRequestScopeProto.valueOf(e.name());
+  }
+  public static ApplicationsRequestScope convertFromProtoFormat
+      (YarnServiceProtos.ApplicationsRequestScopeProto e) {
+    return ApplicationsRequestScope.valueOf(e.name());
   }
 
   /*

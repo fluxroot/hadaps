@@ -624,7 +624,7 @@ public class TestFairScheduler {
     ApplicationAttemptId appAttemptId = createAppAttemptId(1, 1);
     RMApp rmApp = new RMAppImpl(appAttemptId.getApplicationId(), rmContext, conf,
         null, null, null, ApplicationSubmissionContext.newInstance(null, null,
-            null, null, null, false, false, 0, null, null), null, null, 0, null);
+        null, null, null, false, false, 0, null, null), null, null, 0, null, null);
     appsMap.put(appAttemptId.getApplicationId(), rmApp);
     
     AppAddedSchedulerEvent appAddedEvent =
@@ -650,7 +650,7 @@ public class TestFairScheduler {
     ApplicationAttemptId appAttemptId = createAppAttemptId(1, 1);
     RMApp rmApp = new RMAppImpl(appAttemptId.getApplicationId(), rmContext, conf,
         null, null, null, ApplicationSubmissionContext.newInstance(null, null,
-            null, null, null, false, false, 0, null, null), null, null, 0, null);
+        null, null, null, false, false, 0, null, null), null, null, 0, null, null);
     appsMap.put(appAttemptId.getApplicationId(), rmApp);
 
     AppAddedSchedulerEvent appAddedEvent =
@@ -1768,7 +1768,7 @@ public class TestFairScheduler {
     RMApp application =
         new RMAppImpl(applicationId, resourceManager.getRMContext(), conf, name, user, 
           queue, submissionContext, scheduler, masterService,
-          System.currentTimeMillis(), "YARN");
+          System.currentTimeMillis(), "YARN", null);
     resourceManager.getRMContext().getRMApps().putIfAbsent(applicationId, application);
     application.handle(new RMAppEvent(applicationId, RMAppEventType.START));
 
