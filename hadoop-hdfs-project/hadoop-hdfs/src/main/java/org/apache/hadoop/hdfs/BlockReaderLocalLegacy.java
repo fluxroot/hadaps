@@ -630,7 +630,7 @@ class BlockReaderLocalLegacy implements BlockReader {
         skipBuf = new byte[bytesPerChecksum];
       }
       int ret = read(skipBuf, 0, (int)(n - remaining));
-      return ret;
+      return (remaining + ret);
     }
   
     // optimize for big gap: discard the current buffer, skip to
@@ -661,9 +661,9 @@ class BlockReaderLocalLegacy implements BlockReader {
     int ret = read(skipBuf, 0, myOffsetFromChunkBoundary);
 
     if (ret == -1) {  // EOS
-      return toskip;
+      return (toskip + remaining);
     } else {
-      return (toskip + ret);
+      return (toskip + remaining + ret);
     }
   }
 
