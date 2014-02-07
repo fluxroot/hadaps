@@ -360,4 +360,19 @@ public abstract class YarnClient extends AbstractService {
    */
   public abstract List<QueueUserACLInfo> getQueueAclsInfo() throws YarnException,
       IOException;
+  
+  /**
+   * <p>
+   * Attempts to move the given application to the given queue.
+   * </p>
+   * 
+   * @param appId
+   *    Application to move.
+   * @param queue
+   *    Queue to place it in to.
+   * @throws YarnException
+   * @throws IOException
+   */
+  public abstract void moveApplicationAcrossQueues(ApplicationId appId,
+      String queue) throws YarnException, IOException;
 }

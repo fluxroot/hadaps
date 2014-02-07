@@ -48,6 +48,7 @@ import org.apache.hadoop.yarn.api.protocolrecords.GetQueueInfoRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.GetQueueUserAclsInfoRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.KillApplicationRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.KillApplicationResponse;
+import org.apache.hadoop.yarn.api.protocolrecords.MoveApplicationAcrossQueuesRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.SubmitApplicationRequest;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
@@ -402,5 +403,13 @@ public class YarnClientImpl extends YarnClient {
   @VisibleForTesting
   public void setRMClient(ApplicationClientProtocol rmClient) {
     this.rmClient = rmClient;
+  }
+  
+  @Override
+  public void moveApplicationAcrossQueues(ApplicationId appId,
+      String queue) throws YarnException, IOException {
+    MoveApplicationAcrossQueuesRequest request =
+        MoveApplicationAcrossQueuesRequest.newInstance(appId, queue);
+    rmClient.moveApplicationAcrossQueues(request);
   }
 }
