@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.ha.HAServiceProtocol.HAServiceState;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.NodeId;
+import org.apache.hadoop.yarn.conf.ConfigurationProvider;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.server.resourcemanager.recovery.RMStateStore;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMApp;
@@ -90,4 +91,6 @@ public interface RMContext {
 
   void setRMDelegationTokenSecretManager(
       RMDelegationTokenSecretManager delegationTokenSecretManager);
+
+  ConfigurationProvider getConfigurationProvider();
 }
