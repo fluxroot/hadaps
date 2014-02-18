@@ -133,7 +133,7 @@ public final class PBImageXmlWriter {
         case INODE:
           dumpINodeSection(is);
           break;
-        case INODE_REFRENCE:
+        case INODE_REFERENCE:
           dumpINodeReferenceSection(is);
           break;
         case INODE_DIR:

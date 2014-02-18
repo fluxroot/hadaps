@@ -127,7 +127,7 @@ final class LsrPBImage {
         case INODE:
           loadINodeSection(is);
           break;
-        case INODE_REFRENCE:
+        case INODE_REFERENCE:
           loadINodeReferenceSection(is);
           break;
         case INODE_DIR:
