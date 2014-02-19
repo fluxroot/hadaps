@@ -586,8 +586,7 @@ public class TestRMAppAttemptTransitions {
     
     applicationAttempt.handle(
         new RMAppAttemptContainerAllocatedEvent(
-            applicationAttempt.getAppAttemptId(), 
-            container));
+            applicationAttempt.getAppAttemptId()));
     
     assertEquals(RMAppAttemptState.ALLOCATED_SAVING, 
         applicationAttempt.getAppAttemptState());
