@@ -48,7 +48,7 @@ import org.junit.Test;
 
 public class TestRMAdminService {
 
-  private final Configuration configuration = new YarnConfiguration();
+  private Configuration configuration;;
   private MockRM rm = null;
   private FileSystem fs;
   private Path workingPath;
@@ -56,7 +56,7 @@ public class TestRMAdminService {
 
   @Before
   public void setup() throws IOException {
-    Configuration.addDefaultResource(YarnConfiguration.CS_CONFIGURATION_FILE);
+    configuration = new YarnConfiguration();
     fs = FileSystem.get(configuration);
     workingPath =
         new Path(new File("target", this.getClass().getSimpleName()
@@ -80,9 +80,16 @@ public class TestRMAdminService {
     fs.delete(tmpDir, true);
   }
 
+  private void useCapacityScheduler() {
+    configuration.set(YarnConfiguration.RM_SCHEDULER,
+        CapacityScheduler.class.getCanonicalName());
+    configuration.addResource(YarnConfiguration.CS_CONFIGURATION_FILE);
+  }
+
   @Test
   public void testAdminRefreshQueuesWithLocalConfigurationProvider()
       throws IOException, YarnException {
+    useCapacityScheduler();
     rm = new MockRM(configuration);
     rm.init(configuration);
     rm.start();
@@ -105,6 +112,7 @@ public class TestRMAdminService {
       throws IOException, YarnException {
     configuration.set(YarnConfiguration.RM_CONFIGURATION_PROVIDER_CLASS,
         "org.apache.hadoop.yarn.FileSystemBasedConfigurationProvider");
+    useCapacityScheduler();
     rm = new MockRM(configuration);
     rm.init(configuration);
     rm.start();
