@@ -20,9 +20,13 @@ package org.apache.hadoop.hdfs.server.common;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.namenode.MetaRecoveryContext;
+
+import com.google.common.base.Preconditions;
 
 /************************************
  * Some handy internal HDFS constants
@@ -43,6 +47,23 @@ public final class HdfsServerConstants {
     JOURNAL_NODE;
   }
 
+  /** Startup options for rolling upgrade. */
+  public static enum RollingUpgradeStartupOption{
+    ROLLBACK, DOWNGRADE;
+    
+    private static final RollingUpgradeStartupOption[] VALUES = values();
+
+    static RollingUpgradeStartupOption fromString(String s) {
+      for(RollingUpgradeStartupOption opt : VALUES) {
+        if (opt.name().equalsIgnoreCase(s)) {
+          return opt;
+        }
+      }
+      throw new IllegalArgumentException("Failed to convert \"" + s
+          + "\" to " + RollingUpgradeStartupOption.class.getSimpleName());
+    }
+  }
+
   /** Startup options */
   static public enum StartupOption{
     FORMAT  ("-format"),
@@ -54,6 +75,7 @@ public final class HdfsServerConstants {
     UPGRADE ("-upgrade"),
     ROLLBACK("-rollback"),
     FINALIZE("-finalize"),
+    ROLLINGUPGRADE("-rollingUpgrade"),
     IMPORT  ("-importCheckpoint"),
     BOOTSTRAPSTANDBY("-bootstrapStandby"),
     INITIALIZESHAREDEDITS("-initializeSharedEdits"),
@@ -61,12 +83,30 @@ public final class HdfsServerConstants {
     FORCE("-force"),
     NONINTERACTIVE("-nonInteractive"),
     RENAMERESERVED("-renameReserved");
-    
+
+    private static final Pattern ENUM_WITH_ROLLING_UPGRADE_OPTION = Pattern.compile(
+        "(\\w+)\\((\\w+)\\)");
+
+    public static boolean isRollingUpgradeRollback(StartupOption option) {
+      return option == ROLLINGUPGRADE
+          && option.getRollingUpgradeStartupOption() 
+               == RollingUpgradeStartupOption.ROLLBACK;
+    }
+
+    public static boolean isRollingUpgradeDowngrade(StartupOption option) {
+      return option == ROLLINGUPGRADE
+          && option.getRollingUpgradeStartupOption() 
+               == RollingUpgradeStartupOption.DOWNGRADE;
+    }
+
     private final String name;
     
     // Used only with format and upgrade options
     private String clusterId = null;
     
+    // Used only by rolling upgrade
+    private RollingUpgradeStartupOption rollingUpgradeStartupOption;
+
     // Used only with format option
     private boolean isForceFormat = false;
     private boolean isInteractiveFormat = true;
@@ -93,6 +133,16 @@ public final class HdfsServerConstants {
 
     public String getClusterId() {
       return clusterId;
+    }
+    
+    public void setRollingUpgradeStartupOption(String opt) {
+      Preconditions.checkState(this == ROLLINGUPGRADE);
+      rollingUpgradeStartupOption = RollingUpgradeStartupOption.fromString(opt);
+    }
+    
+    public RollingUpgradeStartupOption getRollingUpgradeStartupOption() {
+      Preconditions.checkState(this == ROLLINGUPGRADE);
+      return rollingUpgradeStartupOption;
     }
 
     public MetaRecoveryContext createRecoveryContext() {
@@ -123,6 +173,27 @@ public final class HdfsServerConstants {
     
     public void setInteractiveFormat(boolean interactive) {
       isInteractiveFormat = interactive;
+    }
+    
+    @Override
+    public String toString() {
+      if (this == ROLLINGUPGRADE) {
+        return new StringBuilder(super.toString())
+            .append("(").append(getRollingUpgradeStartupOption()).append(")")
+            .toString();
+      }
+      return super.toString();
+    }
+
+    static public StartupOption getEnum(String value) {
+      Matcher matcher = ENUM_WITH_ROLLING_UPGRADE_OPTION.matcher(value);
+      if (matcher.matches()) {
+        StartupOption option = StartupOption.valueOf(matcher.group(1));
+        option.setRollingUpgradeStartupOption(matcher.group(2));
+        return option;
+      } else {
+        return StartupOption.valueOf(value);
+      }
     }
   }
 

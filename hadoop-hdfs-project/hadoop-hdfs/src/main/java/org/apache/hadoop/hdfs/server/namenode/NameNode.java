@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
@@ -40,6 +41,7 @@ import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.RollingUpgradeStartupOption;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.hdfs.server.namenode.ha.*;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
@@ -63,6 +65,7 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 
 import javax.management.ObjectName;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -204,6 +207,9 @@ public class NameNode implements NameNodeStatusMXBean {
         " [" + StartupOption.CLUSTERID.getName() + " cid]" +
         " [" + StartupOption.RENAMERESERVED.getName() + "<k-v pairs>] ] | ["
       + StartupOption.ROLLBACK.getName() + "] | ["
+      + StartupOption.ROLLINGUPGRADE.getName() + " <"
+      + RollingUpgradeStartupOption.DOWNGRADE.name().toLowerCase() + "|"
+      + RollingUpgradeStartupOption.ROLLBACK.name().toLowerCase() + "> ] | ["
       + StartupOption.FINALIZE.getName() + "] | ["
       + StartupOption.IMPORT.getName() + "] | ["
       + StartupOption.INITIALIZESHAREDEDITS.getName() + "] | ["
@@ -1122,6 +1128,10 @@ public class NameNode implements NameNodeStatusMXBean {
             return null;
           }
         }
+      } else if (StartupOption.ROLLINGUPGRADE.getName().equalsIgnoreCase(cmd)) {
+        startOpt = StartupOption.ROLLINGUPGRADE;
+        ++i;
+        startOpt.setRollingUpgradeStartupOption(args[i]);
       } else if (StartupOption.ROLLBACK.getName().equalsIgnoreCase(cmd)) {
         startOpt = StartupOption.ROLLBACK;
       } else if (StartupOption.FINALIZE.getName().equalsIgnoreCase(cmd)) {
@@ -1167,7 +1177,7 @@ public class NameNode implements NameNodeStatusMXBean {
   }
 
   private static void setStartupOption(Configuration conf, StartupOption opt) {
-    conf.set(DFS_NAMENODE_STARTUP_KEY, opt.toString());
+    conf.set(DFS_NAMENODE_STARTUP_KEY, opt.name());
   }
 
   static StartupOption getStartupOption(Configuration conf) {
@@ -1197,7 +1207,7 @@ public class NameNode implements NameNodeStatusMXBean {
     FSNamesystem fsn = null;
     try {
       fsn = FSNamesystem.loadFromDisk(conf);
-      fsn.saveNamespace();
+      fsn.getFSImage().saveNamespace(fsn);
       MetaRecoveryContext.LOG.info("RECOVERY COMPLETE");
     } catch (IOException e) {
       MetaRecoveryContext.LOG.info("RECOVERY FAILED: caught exception", e);
@@ -1213,6 +1223,7 @@ public class NameNode implements NameNodeStatusMXBean {
 
   public static NameNode createNameNode(String argv[], Configuration conf)
       throws IOException {
+    LOG.info("createNameNode " + Arrays.asList(argv));
     if (conf == null)
       conf = new HdfsConfiguration();
     StartupOption startOpt = parseArguments(argv);

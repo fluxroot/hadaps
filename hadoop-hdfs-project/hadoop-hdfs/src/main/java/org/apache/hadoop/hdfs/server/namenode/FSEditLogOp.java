@@ -44,6 +44,8 @@ import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME_OLD;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENAME_SNAPSHOT;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_RENEW_DELEGATION_TOKEN;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_ROLLING_UPGRADE_FINALIZE;
+import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_ROLLING_UPGRADE_START;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_ACL;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_GENSTAMP_V1;
 import static org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes.OP_SET_GENSTAMP_V2;
@@ -179,7 +181,13 @@ public abstract class FSEditLogOp {
       inst.put(OP_ADD_CACHE_POOL, new AddCachePoolOp());
       inst.put(OP_MODIFY_CACHE_POOL, new ModifyCachePoolOp());
       inst.put(OP_REMOVE_CACHE_POOL, new RemoveCachePoolOp());
+
+      inst.put(OP_ADD_BLOCK, new AddBlockOp());
       inst.put(OP_SET_ACL, new SetAclOp());
+      inst.put(OP_ROLLING_UPGRADE_START, new RollingUpgradeOp(
+          OP_ROLLING_UPGRADE_START, "start"));
+      inst.put(OP_ROLLING_UPGRADE_FINALIZE, new RollingUpgradeOp(
+          OP_ROLLING_UPGRADE_FINALIZE, "finalize"));
     }
     
     public FSEditLogOp get(FSEditLogOpCodes opcode) {
@@ -267,8 +275,8 @@ public abstract class FSEditLogOp {
   
   void readRpcIds(DataInputStream in, int logVersion)
       throws IOException {
-    if (LayoutVersion.supports(Feature.EDITLOG_SUPPORT_RETRYCACHE,
-        logVersion)) {
+    if (NameNodeLayoutVersion.supports(
+        LayoutVersion.Feature.EDITLOG_SUPPORT_RETRYCACHE, logVersion)) {
       this.rpcClientId = FSImageSerialization.readBytes(in);
       this.rpcCallId = FSImageSerialization.readInt(in);
     }
@@ -315,7 +323,7 @@ public abstract class FSEditLogOp {
 
     private static List<AclEntry> read(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EXTENDED_ACL, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(Feature.EXTENDED_ACL, logVersion)) {
         return null;
       }
 
@@ -480,18 +488,20 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
       }
-      if (LayoutVersion.supports(Feature.ADD_INODE_ID, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.ADD_INODE_ID, logVersion)) {
         this.inodeId = in.readLong();
       } else {
         // The inodeId should be updated when this editLogOp is applied
         this.inodeId = INodeId.GRANDFATHER_INODE_ID;
       }
       if ((-17 < logVersion && length != 4) ||
-          (logVersion <= -17 && length != 5 && !LayoutVersion.supports(
-              Feature.EDITLOG_OP_OPTIMIZATION, logVersion))) {
+          (logVersion <= -17 && length != 5 && !NameNodeLayoutVersion.supports(
+              LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion))) {
         throw new IOException("Incorrect data format."  +
                               " logVersion is " + logVersion +
                               " but writables.length is " +
@@ -499,7 +509,8 @@ public abstract class FSEditLogOp {
       }
       this.path = FSImageSerialization.readString(in);
 
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.replication = FSImageSerialization.readShort(in);
         this.mtime = FSImageSerialization.readLong(in);
       } else {
@@ -507,8 +518,10 @@ public abstract class FSEditLogOp {
         this.mtime = readLong(in);
       }
 
-      if (LayoutVersion.supports(Feature.FILE_ACCESS_TIME, logVersion)) {
-        if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.FILE_ACCESS_TIME, logVersion)) {
+        if (NameNodeLayoutVersion.supports(
+            LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
           this.atime = FSImageSerialization.readLong(in);
         } else {
           this.atime = readLong(in);
@@ -517,7 +530,8 @@ public abstract class FSEditLogOp {
         this.atime = 0;
       }
 
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.blockSize = FSImageSerialization.readLong(in);
       } else {
         this.blockSize = readLong(in);
@@ -933,7 +947,8 @@ public abstract class FSEditLogOp {
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
       this.path = FSImageSerialization.readString(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.replication = FSImageSerialization.readShort(in);
       } else {
         this.replication = readShort(in);
@@ -1024,7 +1039,8 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (length < 3) { // trg, srcs.., timestamp
           throw new IOException("Incorrect data format " +
@@ -1033,7 +1049,8 @@ public abstract class FSEditLogOp {
       }
       this.trg = FSImageSerialization.readString(in);
       int srcSize = 0;
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         srcSize = in.readInt();
       } else {
         srcSize = this.length - 1 - 1; // trg and timestamp
@@ -1052,7 +1069,8 @@ public abstract class FSEditLogOp {
         srcs[i]= FSImageSerialization.readString(in);
       }
       
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.timestamp = FSImageSerialization.readLong(in);
       } else {
         this.timestamp = readLong(in);
@@ -1158,7 +1176,8 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (this.length != 3) {
           throw new IOException("Incorrect data format. "
@@ -1167,7 +1186,8 @@ public abstract class FSEditLogOp {
       }
       this.src = FSImageSerialization.readString(in);
       this.dst = FSImageSerialization.readString(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.timestamp = FSImageSerialization.readLong(in);
       } else {
         this.timestamp = readLong(in);
@@ -1254,14 +1274,16 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (this.length != 2) {
           throw new IOException("Incorrect data format. " + "delete operation.");
         }
       }
       this.path = FSImageSerialization.readString(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.timestamp = FSImageSerialization.readLong(in);
       } else {
         this.timestamp = readLong(in);
@@ -1362,22 +1384,26 @@ public abstract class FSEditLogOp {
     
     @Override
     void readFields(DataInputStream in, int logVersion) throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
       }
       if (-17 < logVersion && length != 2 ||
           logVersion <= -17 && length != 3
-          && !LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+          && !NameNodeLayoutVersion.supports(
+              LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         throw new IOException("Incorrect data format. Mkdir operation.");
       }
-      if (LayoutVersion.supports(Feature.ADD_INODE_ID, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.ADD_INODE_ID, logVersion)) {
         this.inodeId = FSImageSerialization.readLong(in);
       } else {
         // This id should be updated when this editLogOp is applied
         this.inodeId = INodeId.GRANDFATHER_INODE_ID;
       }
       this.path = FSImageSerialization.readString(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.timestamp = FSImageSerialization.readLong(in);
       } else {
         this.timestamp = readLong(in);
@@ -1386,8 +1412,10 @@ public abstract class FSEditLogOp {
       // The disk format stores atimes for directories as well.
       // However, currently this is not being updated/used because of
       // performance reasons.
-      if (LayoutVersion.supports(Feature.FILE_ACCESS_TIME, logVersion)) {
-        if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.FILE_ACCESS_TIME, logVersion)) {
+        if (NameNodeLayoutVersion.supports(
+            LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
           FSImageSerialization.readLong(in);
         } else {
           readLong(in);
@@ -1977,7 +2005,8 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (length != 3) {
           throw new IOException("Incorrect data format. " + "times operation.");
@@ -1985,7 +2014,8 @@ public abstract class FSEditLogOp {
       }
       this.path = FSImageSerialization.readString(in);
 
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.mtime = FSImageSerialization.readLong(in);
         this.atime = FSImageSerialization.readLong(in);
       } else {
@@ -2094,14 +2124,16 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (this.length != 4) {
           throw new IOException("Incorrect data format. "
               + "symlink operation.");
         }
       }
-      if (LayoutVersion.supports(Feature.ADD_INODE_ID, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.ADD_INODE_ID, logVersion)) {
         this.inodeId = FSImageSerialization.readLong(in);
       } else {
         // This id should be updated when the editLogOp is applied
@@ -2110,7 +2142,8 @@ public abstract class FSEditLogOp {
       this.path = FSImageSerialization.readString(in);
       this.value = FSImageSerialization.readString(in);
 
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.mtime = FSImageSerialization.readLong(in);
         this.atime = FSImageSerialization.readLong(in);
       } else {
@@ -2228,7 +2261,8 @@ public abstract class FSEditLogOp {
     @Override
     void readFields(DataInputStream in, int logVersion)
         throws IOException {
-      if (!LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (!NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.length = in.readInt();
         if (this.length != 3) {
           throw new IOException("Incorrect data format. " + "Rename operation.");
@@ -2237,7 +2271,8 @@ public abstract class FSEditLogOp {
       this.src = FSImageSerialization.readString(in);
       this.dst = FSImageSerialization.readString(in);
 
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.timestamp = FSImageSerialization.readLong(in);
       } else {
         this.timestamp = readLong(in);
@@ -2448,7 +2483,8 @@ public abstract class FSEditLogOp {
         throws IOException {
       this.token = new DelegationTokenIdentifier();
       this.token.readFields(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.expiryTime = FSImageSerialization.readLong(in);
       } else {
         this.expiryTime = readLong(in);
@@ -2520,7 +2556,8 @@ public abstract class FSEditLogOp {
         throws IOException {
       this.token = new DelegationTokenIdentifier();
       this.token.readFields(in);
-      if (LayoutVersion.supports(Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITLOG_OP_OPTIMIZATION, logVersion)) {
         this.expiryTime = FSImageSerialization.readLong(in);
       } else {
         this.expiryTime = readLong(in);
@@ -3544,6 +3581,65 @@ public abstract class FSEditLogOp {
       this.len = in.readLong();
     }
   }
+  /**
+   * Operation corresponding to upgrade
+   */
+  static class RollingUpgradeOp extends FSEditLogOp { // @Idempotent
+    private final String name;
+    private long time;
+
+    public RollingUpgradeOp(FSEditLogOpCodes code, String name) {
+      super(code);
+      this.name = name.toUpperCase();
+    }
+
+    static RollingUpgradeOp getStartInstance(OpInstanceCache cache) {
+      return (RollingUpgradeOp) cache.get(OP_ROLLING_UPGRADE_START);
+    }
+
+    static RollingUpgradeOp getFinalizeInstance(OpInstanceCache cache) {
+      return (RollingUpgradeOp) cache.get(OP_ROLLING_UPGRADE_FINALIZE);
+    }
+
+    long getTime() {
+      return time;
+    }
+
+    void setTime(long time) {
+      this.time = time;
+    }
+
+    @Override
+    void readFields(DataInputStream in, int logVersion) throws IOException {
+      time = in.readLong();
+    }
+
+    @Override
+    public void writeFields(DataOutputStream out) throws IOException {
+      FSImageSerialization.writeLong(time, out);
+    }
+
+    @Override
+    protected void toXml(ContentHandler contentHandler) throws SAXException {
+      XMLUtils.addSaxString(contentHandler, name + "TIME",
+          Long.valueOf(time).toString());
+    }
+
+    @Override
+    void fromXml(Stanza st) throws InvalidXmlException {
+      this.time = Long.valueOf(st.getValue(name + "TIME"));
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder().append("RollingUpgradeOp [").append(name)
+          .append(", time=").append(time).append("]").toString();
+    }
+    
+    static class RollbackException extends IOException {
+      private static final long serialVersionUID = 1L;
+    }
+  }
 
   /**
    * Class for writing editlog ops
@@ -3594,7 +3690,8 @@ public abstract class FSEditLogOp {
      */
     public Reader(DataInputStream in, StreamLimiter limiter, int logVersion) {
       this.logVersion = logVersion;
-      if (LayoutVersion.supports(Feature.EDITS_CHESKUM, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.EDITS_CHESKUM, logVersion)) {
         this.checksum = new PureJavaCrc32();
       } else {
         this.checksum = null;
@@ -3733,7 +3830,8 @@ public abstract class FSEditLogOp {
         throw new IOException("Read invalid opcode " + opCode);
       }
 
-      if (LayoutVersion.supports(Feature.STORED_TXIDS, logVersion)) {
+      if (NameNodeLayoutVersion.supports(
+          LayoutVersion.Feature.STORED_TXIDS, logVersion)) {
         // Read the txid
         op.setTransactionId(in.readLong());
       } else {
