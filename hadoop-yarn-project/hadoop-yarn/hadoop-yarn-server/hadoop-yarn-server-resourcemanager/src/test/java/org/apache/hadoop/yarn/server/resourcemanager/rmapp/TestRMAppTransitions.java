@@ -32,6 +32,8 @@ import junit.framework.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod;
@@ -67,6 +69,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.security.NMTokenSecretManag
 import org.apache.hadoop.yarn.server.resourcemanager.security.RMContainerTokenSecretManager;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -84,6 +87,7 @@ public class TestRMAppTransitions {
   private DrainDispatcher rmDispatcher;
   private RMStateStore store;
   private YarnScheduler scheduler;
+  private Path killedHistoryFlagDir;
 
   // ignore all the RM application attempt events
   private static final class TestApplicationAttemptEventDispatcher implements
@@ -201,6 +205,11 @@ public class TestRMAppTransitions {
     
     rmDispatcher.init(conf);
     rmDispatcher.start();
+
+    TemporaryFolder tf = new TemporaryFolder();
+    killedHistoryFlagDir = new Path(tf.newFolder().toURI());
+    conf.set(YarnConfiguration.YARN_AM_FAILURE_FLAG_DIR,
+        killedHistoryFlagDir.toString());
   }
 
   protected RMApp createNewTestApp(ApplicationSubmissionContext submissionContext) {
@@ -320,6 +329,16 @@ public class TestRMAppTransitions {
     StringBuilder diag = application.getDiagnostics();
     Assert.assertTrue("application diagnostics is not correct",
         diag.toString().matches(regex));
+  }
+
+  private void assertWroteFlagFileForFailedAM(RMApp application)
+          throws IOException {
+    FileSystem fs = FileSystem.get(conf);
+    Assert.assertTrue(fs.exists(killedHistoryFlagDir));
+    Assert.assertEquals(1, fs.listStatus(killedHistoryFlagDir).length);
+    Path flagFile = new Path(killedHistoryFlagDir, application.getUser() + "_"
+        + application.getCurrentAppAttempt().getAppAttemptId().toString());
+    Assert.assertTrue(fs.exists(flagFile));
   }
 
   private void sendAppUpdateSavedEvent(RMApp application) {
@@ -472,6 +491,7 @@ public class TestRMAppTransitions {
     assertFailed(application,
         ".*Unmanaged application.*Failing the application.*");
     assertAppFinalStateSaved(application);
+    assertWroteFlagFileForFailedAM(application);
   }
   
   @Test
@@ -612,6 +632,7 @@ public class TestRMAppTransitions {
     sendAppUpdateSavedEvent(application);
     assertFailed(application, ".*" + message + ".*Failing the application.*");
     assertAppFinalStateSaved(application);
+    assertWroteFlagFileForFailedAM(application);
   }
 
   @Test
@@ -709,6 +730,7 @@ public class TestRMAppTransitions {
     rmDispatcher.await();
     assertFailed(application, ".*Failing the application.*");
     assertAppFinalStateSaved(application);
+    assertWroteFlagFileForFailedAM(application);
   }
 
   @Test
@@ -838,6 +860,7 @@ public class TestRMAppTransitions {
 
     assertTimesAtFinish(application);
     assertAppState(RMAppState.KILLED, application);
+
   }
 
   @Test
