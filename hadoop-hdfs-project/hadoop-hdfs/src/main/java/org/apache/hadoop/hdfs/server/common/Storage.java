@@ -1019,7 +1019,6 @@ public abstract class Storage extends StorageInfo {
   public static String getRegistrationID(StorageInfo storage) {
     return "NS-" + Integer.toString(storage.getNamespaceID())
       + "-" + storage.getClusterID()
-      + "-" + Integer.toString(storage.getLayoutVersion())
       + "-" + Long.toString(storage.getCTime());
   }
   
