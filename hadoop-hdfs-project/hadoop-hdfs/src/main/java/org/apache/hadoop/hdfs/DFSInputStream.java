@@ -1403,7 +1403,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
       success = true;
     } finally {
       if (!success) {
-        clientMmap.unref();
+        IOUtils.closeQuietly(clientMmap);
       }
     }
     return buffer;
@@ -1417,7 +1417,7 @@ implements ByteBufferReadable, CanSetDropBehind, CanSetReadahead,
           "that was not created by this stream, " + buffer);
     }
     if (val instanceof ClientMmap) {
-      ((ClientMmap)val).unref();
+      IOUtils.closeQuietly((ClientMmap)val);
     } else if (val instanceof ByteBufferPool) {
       ((ByteBufferPool)val).putBuffer(buffer);
     }
