@@ -1058,7 +1058,9 @@ public class YarnConfiguration extends Configuration {
 
   /**
    * Get the socket address for <code>name</code> property as a
-   * <code>InetSocketAddress</code>.
+   * <code>InetSocketAddress</code>. On a HA cluster,
+   * this fetches the address corresponding to the RM identified by
+   * {@link #RM_HA_ID}.
    * @param name property name.
    * @param defaultAddress the default value
    * @param defaultPort the default port
@@ -1107,5 +1109,14 @@ public class YarnConfiguration extends Configuration {
               + ". The valid value should be one of "
               + YarnConfiguration.RM_SERVICES_ADDRESS_CONF_KEYS);
     }
+  }
+  @Private
+  public static String getClusterId(Configuration conf) {
+    String clusterId = conf.get(YarnConfiguration.RM_CLUSTER_ID);
+    if (clusterId == null) {
+      throw new HadoopIllegalArgumentException("Configuration doesn't specify" +
+          YarnConfiguration.RM_CLUSTER_ID);
+    }
+    return clusterId;
   }
 }
