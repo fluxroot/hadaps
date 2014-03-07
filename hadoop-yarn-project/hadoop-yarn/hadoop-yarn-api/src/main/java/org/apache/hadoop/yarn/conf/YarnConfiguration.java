@@ -1110,6 +1110,13 @@ public class YarnConfiguration extends Configuration {
               + YarnConfiguration.RM_SERVICES_ADDRESS_CONF_KEYS);
     }
   }
+
+  public static boolean useHttps(Configuration conf) {
+    return HttpConfig.Policy.HTTPS_ONLY == HttpConfig.Policy.fromString(conf
+        .get(YARN_HTTP_POLICY_KEY,
+            YARN_HTTP_POLICY_DEFAULT));
+  }
+
   @Private
   public static String getClusterId(Configuration conf) {
     String clusterId = conf.get(YarnConfiguration.RM_CLUSTER_ID);
