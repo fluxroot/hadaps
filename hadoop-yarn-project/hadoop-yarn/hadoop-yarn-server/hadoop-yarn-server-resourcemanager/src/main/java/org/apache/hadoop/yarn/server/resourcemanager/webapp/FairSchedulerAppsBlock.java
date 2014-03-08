@@ -68,6 +68,7 @@ public class FairSchedulerAppsBlock extends HtmlBlock {
             th(".id", "ID").
             th(".user", "User").
             th(".name", "Name").
+            th(".type", "Application Type").
             th(".queue", "Queue").
             th(".fairshare", "Fair Share").
             th(".starttime", "StartTime").
@@ -88,7 +89,7 @@ public class FairSchedulerAppsBlock extends HtmlBlock {
     }
     StringBuilder appsTableData = new StringBuilder("[\n");
     for (RMApp app : apps.values()) {
-      if (reqAppStates != null && !reqAppStates.contains(app.getState())) {
+      if (reqAppStates != null && !reqAppStates.contains(app.createApplicationState())) {
         continue;
       }
       AppInfo appInfo = new AppInfo(app, true);
@@ -103,6 +104,8 @@ public class FairSchedulerAppsBlock extends HtmlBlock {
         appInfo.getUser()))).append("\",\"")
       .append(StringEscapeUtils.escapeJavaScript(StringEscapeUtils.escapeHtml(
         appInfo.getName()))).append("\",\"")
+      .append(StringEscapeUtils.escapeJavaScript(StringEscapeUtils.escapeHtml(
+        appInfo.getApplicationType()))).append("\",\"")
       .append(StringEscapeUtils.escapeJavaScript(StringEscapeUtils.escapeHtml(
         appInfo.getQueue()))).append("\",\"")
       .append(fairShare).append("\",\"")
