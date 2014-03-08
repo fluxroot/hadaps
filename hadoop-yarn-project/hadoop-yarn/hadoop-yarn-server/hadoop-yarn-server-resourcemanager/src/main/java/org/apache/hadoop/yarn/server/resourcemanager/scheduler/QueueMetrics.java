@@ -269,8 +269,9 @@ public class QueueMetrics implements MetricsSource {
   public void finishApp(String user, RMAppState rmAppFinalState) {
     switch (rmAppFinalState) {
       case KILLED: appsKilled.incr(); break;
-      case FAILED: appsFailed.incr(); break;
-      default: appsCompleted.incr();  break;
+      case FAILED: appsFailed.incr();  break;
+      case FINISHED: appsCompleted.incr();  break;
+      default: LOG.error("Unknown state {} in finishApp", rmAppFinalState); break;
     }
     QueueMetrics userMetrics = getUserMetrics(user);
     if (userMetrics != null) {

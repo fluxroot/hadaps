@@ -121,7 +121,6 @@ public class RMAppImpl implements RMApp, Recoverable {
   private String queue;
   @SuppressWarnings("rawtypes")
   private EventHandler handler;
-  private static final FinalTransition FINAL_TRANSITION = new FinalTransition();
   private static final AppFinishedTransition FINISHED_TRANSITION =
       new AppFinishedTransition();
 
@@ -747,7 +746,7 @@ public class RMAppImpl implements RMApp, Recoverable {
 
       // The app has completed.
       if (app.recoveredFinalState != null) {
-        FINAL_TRANSITION.transition(app, event);
+        new FinalTransition(app.recoveredFinalState).transition(app, event);
         return app.recoveredFinalState;
       }
 
@@ -830,7 +829,7 @@ public class RMAppImpl implements RMApp, Recoverable {
       LOG.info(msg);
       app.diagnostics.append(msg);
       // Inform the node for app-finish
-      FINAL_TRANSITION.transition(app, event);
+      new FinalTransition(RMAppState.FAILED).transition(app, event);
     }
   }
 
@@ -943,6 +942,10 @@ public class RMAppImpl implements RMApp, Recoverable {
   }
 
   private static class AppFinishedTransition extends FinalTransition {
+    public AppFinishedTransition() {
+      super(RMAppState.FINISHED);
+    }
+
     public void transition(RMAppImpl app, RMAppEvent event) {
       RMAppFinishedAttemptEvent finishedEvent =
           (RMAppFinishedAttemptEvent)event;
@@ -986,6 +989,10 @@ public class RMAppImpl implements RMApp, Recoverable {
 
 
   private static class AppKilledTransition extends FinalTransition {
+    public AppKilledTransition() {
+      super(RMAppState.KILLED);
+    }
+
     @Override
     public void transition(RMAppImpl app, RMAppEvent event) {
       app.diagnostics.append(getAppKilledDiagnostics());
@@ -1008,6 +1015,10 @@ public class RMAppImpl implements RMApp, Recoverable {
 
   private static final class AppRejectedTransition extends
       FinalTransition{
+    public AppRejectedTransition() {
+      super(RMAppState.FAILED);
+    }
+
     public void transition(RMAppImpl app, RMAppEvent event) {
       RMAppRejectedEvent rejectedEvent = (RMAppRejectedEvent)event;
       app.diagnostics.append(rejectedEvent.getMessage());
@@ -1016,6 +1027,12 @@ public class RMAppImpl implements RMApp, Recoverable {
   }
 
   private static class FinalTransition extends RMAppTransition {
+
+    private final RMAppState finalState;
+
+    public FinalTransition(RMAppState finalState) {
+      this.finalState = finalState;
+    }
 
     private Set<NodeId> getNodesOnWhichAttemptRan(RMAppImpl app) {
       Set<NodeId> nodes = new HashSet<NodeId>();
@@ -1035,8 +1052,7 @@ public class RMAppImpl implements RMApp, Recoverable {
       if (app.finishTime == 0 ) {
         app.finishTime = System.currentTimeMillis();
       }
-      app.handler.handle(new AppRemovedSchedulerEvent(app.applicationId, app
-        .getState()));
+      app.handler.handle(new AppRemovedSchedulerEvent(app.applicationId, finalState));
       app.handler.handle(
           new RMAppManagerEvent(app.applicationId,
           RMAppManagerEventType.APP_COMPLETED));
