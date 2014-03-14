@@ -30,6 +30,9 @@ import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 
 public class Allocation {
   
+  private final RecordFactory recordFactory =
+      RecordFactoryProvider.getRecordFactory(null);
+
   final List<Container> containers;
   final Resource resourceLimit;
   final Set<ContainerId> strictContainers;
