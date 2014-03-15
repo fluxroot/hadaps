@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @InterfaceAudience.Private
 class Hadaps {
@@ -28,19 +27,6 @@ class Hadaps {
 
   private static final String USAGE = "Usage: java "
       + Hadaps.class.getSimpleName();
-
-  private static String getPrettyTime(long duration) {
-    assert duration > 0;
-
-    return String.format(
-      "%02d:%02d:%02d.%03d",
-      TimeUnit.MILLISECONDS.toHours(duration),
-      TimeUnit.MILLISECONDS.toMinutes(duration)
-          - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duration)),
-      TimeUnit.MILLISECONDS.toSeconds(duration)
-          - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)),
-      duration - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(duration)));
-  }
 
   private int run(List<Generation> generations, List<File> files, Configuration configuration)
       throws IOException, InterruptedException {
@@ -63,7 +49,7 @@ class Hadaps {
     }
 
     long duration = Time.now() - startTime;
-    LOG.info("Balancing took " + getPrettyTime(duration));
+    LOG.info("Balancing took " + TimeUtils.getPrettyTime(duration));
 
     return 0;
   }
