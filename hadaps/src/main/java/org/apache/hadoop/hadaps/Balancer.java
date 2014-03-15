@@ -7,11 +7,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +23,6 @@ class Balancer {
 
   private static final int CONCURRENT_TASKS = 3;
 
-  private final URI nameNode;
   private final List<ParameterGeneration> parameterGenerations;
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
@@ -33,21 +32,30 @@ class Balancer {
   private final CompletionService<BalancerResult> completionService =
       new ExecutorCompletionService<BalancerResult>(threadPool);
 
-  Balancer(URI nameNode, List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration) {
-    if (nameNode == null) throw new IllegalArgumentException();
+  Balancer(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration) {
     if (parameterGenerations == null) throw new IllegalArgumentException();
     if (parameterFiles == null) throw new IllegalArgumentException();
     if (configuration == null) throw new IllegalArgumentException();
 
-    this.nameNode = nameNode;
     this.parameterGenerations = parameterGenerations;
     this.parameterFiles = parameterFiles;
     this.configuration = configuration;
   }
 
   void run() throws IOException, InterruptedException {
+    // Get the distributed filesystem
+    FileSystem fileSystem = FileSystem.get(configuration);
+    if (!(fileSystem instanceof DistributedFileSystem)) {
+      throw new IllegalStateException("Filesystem " + fileSystem.getUri() + " is not an HDFS filesystem");
+    }
+    DistributedFileSystem dfs = (DistributedFileSystem) fileSystem;
+
     // Populate balancer files
-    List<BalancerFile> balancerFiles = getBalancerFiles();
+    List<BalancerFile> balancerFiles = getBalancerFiles(dfs);
+
+    // Create our policy
+    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dfs, parameterGenerations);
+    policy.initialize(configuration);
 
     // Now balance each file
     for (BalancerFile balancerFile : balancerFiles) {
@@ -61,7 +69,7 @@ class Balancer {
         }
       }
 
-      completionService.submit(new BalancerTask(balancerFile));
+      completionService.submit(new BalancerTask(balancerFile, policy, dfs));
     }
 
     // Await completion of any submitted task
@@ -78,15 +86,14 @@ class Balancer {
     threadPool.awaitTermination(10, TimeUnit.SECONDS);
   }
 
-  private List<BalancerFile> getBalancerFiles() throws IOException {
+  private List<BalancerFile> getBalancerFiles(DistributedFileSystem fileSystem) throws IOException {
     List<BalancerFile> balancerFiles = new ArrayList<BalancerFile>();
 
     // Iterate over each pattern
     for (ParameterFile parameterFile : parameterFiles) {
       Path globPath = new Path(parameterFile.getName());
-      FileSystem fileSystem = globPath.getFileSystem(configuration);
-      FileStatus[] stats = fileSystem.globStatus(globPath);
 
+      FileStatus[] stats = fileSystem.globStatus(globPath);
       if (stats != null && stats.length > 0) {
         // We have some matching paths
 
@@ -110,7 +117,7 @@ class Balancer {
   }
 
   private void populateBalancerFiles(
-      List<BalancerFile> balancerFiles, FileStatus status, ParameterFile parameterFile, FileSystem fileSystem)
+      List<BalancerFile> balancerFiles, FileStatus status, ParameterFile parameterFile, DistributedFileSystem fileSystem)
       throws IOException {
     assert balancerFiles != null;
     assert status != null;

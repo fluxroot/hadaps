@@ -5,7 +5,7 @@ package org.apache.hadoop.hadaps;
 
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +17,9 @@ class BalancerFile implements Comparable<BalancerFile> {
 
   private FileStatus status;
   private final ParameterFile parameterFile;
-  private final FileSystem fileSystem;
+  private final DistributedFileSystem fileSystem;
 
-  BalancerFile(FileStatus status, ParameterFile parameterFile, FileSystem fileSystem) {
+  BalancerFile(FileStatus status, ParameterFile parameterFile, DistributedFileSystem fileSystem) {
     if (status == null) throw new IllegalArgumentException();
     if (parameterFile == null) throw new IllegalArgumentException();
     if (fileSystem == null) throw new IllegalArgumentException();

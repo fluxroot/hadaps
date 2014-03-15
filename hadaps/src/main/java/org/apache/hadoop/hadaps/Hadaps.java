@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,14 +38,8 @@ class Hadaps {
 
     long startTime = Time.now();
 
-    Collection<URI> nameNodeUris = DFSUtil.getNsServiceRpcUris(configuration);
-    LOG.info("NameNodes: " + nameNodeUris);
-
-    // For each NameNode run the balancer
-    for (URI nameNodeUri : nameNodeUris) {
-      Balancer balancer = new Balancer(nameNodeUri, parameterGenerations, parameterFiles, configuration);
-      balancer.run();
-    }
+    Balancer balancer = new Balancer(parameterGenerations, parameterFiles, configuration);
+    balancer.run();
 
     long duration = Time.now() - startTime;
     LOG.info("Balancing took {}", Utils.getPrettyTime(duration));
