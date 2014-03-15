@@ -3,7 +3,7 @@
  */
 package org.apache.hadoop.hadaps;
 
-class Statistic {
+class Statistic implements Comparable<Statistic> {
 
   private final int iteration;
   private final String filename;
@@ -37,6 +37,17 @@ class Statistic {
 
   public long getDuration() {
     return duration;
+  }
+
+  @Override
+  public int compareTo(Statistic o) {
+    if (o == null) throw new IllegalArgumentException();
+
+    if (filename.equals(o.filename)) {
+      return Integer.compare(iteration, o.iteration);
+    } else {
+      return filename.compareTo(o.filename);
+    }
   }
 
 }
