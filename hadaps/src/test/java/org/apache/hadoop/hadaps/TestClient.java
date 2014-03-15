@@ -29,6 +29,7 @@ class TestClient {
       + "%n"
       + "Available commands are:%n"
       + "  read [-dir <test directory>]%n"
+      + "       [-iteration <number of iterations>]%n"
       + "    Reads files randomly from the test directory.%n"
       + "%n"
       + "  write [-dir <test directory>]%n"
@@ -45,18 +46,20 @@ class TestClient {
 
   private static class Parameters {
     private static final Parameters DEFAULT = new Parameters(
-        Mode.READ, "hadaps.testdir", 50, 10, 10
+        Mode.READ, "hadaps.testdir", 1, 50, 10, 10
     );
 
     private final Mode mode;
     private final String directory;
+    private final int iteration;
     private final int count;
     private final int minsize;
     private final int maxsize;
 
-    private Parameters(Mode mode, String directory, int count, int minsize, int maxsize) {
+    private Parameters(Mode mode, String directory, int iteration, int count, int minsize, int maxsize) {
       this.mode = mode;
       this.directory = directory;
+      this.iteration = iteration;
       this.count = count;
       this.minsize = minsize;
       this.maxsize = maxsize;
@@ -120,47 +123,52 @@ class TestClient {
     List<Path> files = getFiles(fileContext, directory);
     LOG.debug("Using files: {}", files.toString());
 
-    // Read all files in random order
-    List<Path> filesPool = new ArrayList<Path>(files);
+    for (int i = 1; i < parameters.iteration + 1; ++i) {
+      LOG.info("Starting iteration {}", i);
+      System.out.format("Starting iteration %d%n", i);
 
-    while (filesPool.size() > 0) {
-      // Get the file
-      int index = random.nextInt(filesPool.size());
-      Path file = fileContext.makeQualified(filesPool.get(index));
+      // Read all files in random order
+      List<Path> filesPool = new ArrayList<Path>(files);
 
-      // Read the file
-      FSDataInputStream inputStream = null;
-      try {
-        inputStream = fileContext.open(file);
+      while (filesPool.size() > 0) {
+        // Get the file
+        int index = random.nextInt(filesPool.size());
+        Path file = fileContext.makeQualified(filesPool.get(index));
 
-        LOG.info("Reading file {}", file.toString());
-        System.out.format("Reading file %s%n", file.toString());
+        // Read the file
+        FSDataInputStream inputStream = null;
+        try {
+          inputStream = fileContext.open(file);
 
-        long startTime = Time.now();
+          LOG.info("Reading file {}", file.toString());
+          System.out.format("Reading file %s%n", file.toString());
 
-        byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
-        int length = inputStream.read(bytes);
-        while (length != -1) {
-          messageDigest.update(bytes, 0, length);
-          length = inputStream.read(bytes);
-        }
+          long startTime = Time.now();
 
-        long duration = Time.now() - startTime;
+          byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
+          int length = inputStream.read(bytes);
+          while (length != -1) {
+            messageDigest.update(bytes, 0, length);
+            length = inputStream.read(bytes);
+          }
 
-        // Compare the digest
-        String digest = Utils.getHexString(messageDigest.digest());
-        if (file.getName().equalsIgnoreCase(digest)) {
-          LOG.info("Read file {} in {}", file.toString(), Utils.getPrettyTime(duration));
-          System.out.format("Read file %s in %s%n", file.toString(), Utils.getPrettyTime(duration));
-        } else {
-          LOG.warn("Content does not match filename: {} != {}", digest, file.toString());
-          System.out.format("Content does not match filename: %s != %s", digest, file.toString());
-        }
+          long duration = Time.now() - startTime;
 
-        filesPool.remove(index);
-      } finally {
-        if (inputStream != null) {
-          inputStream.close();
+          // Compare the digest
+          String digest = Utils.getHexString(messageDigest.digest());
+          if (file.getName().equalsIgnoreCase(digest)) {
+            LOG.info("Iteration {}: Read file {} in {}", i, file.toString(), Utils.getPrettyTime(duration));
+            System.out.format("Iteration %d: Read file %s in %s%n", i, file.toString(), Utils.getPrettyTime(duration));
+          } else {
+            LOG.warn("Content does not match filename: {} != {}", digest, file.toString());
+            System.out.format("Content does not match filename: %s != %s%n", digest, file.toString());
+          }
+
+          filesPool.remove(index);
+        } finally {
+          if (inputStream != null) {
+            inputStream.close();
+          }
         }
       }
     }
@@ -254,6 +262,7 @@ class TestClient {
       // Default parameters
       Mode mode = Parameters.DEFAULT.mode;
       String directory = Parameters.DEFAULT.directory;
+      int iteration = Parameters.DEFAULT.iteration;
       int count = Parameters.DEFAULT.count;
       int minsize = Parameters.DEFAULT.minsize;
       int maxsize = Parameters.DEFAULT.maxsize;
@@ -269,6 +278,12 @@ class TestClient {
           mode = Mode.WRITE;
         } else if (token.equalsIgnoreCase("-dir") && tokens.hasNext()) {
           directory = tokens.next().trim();
+        } else if (token.equalsIgnoreCase("-iteration") && tokens.hasNext()) {
+          iteration = Integer.parseInt(tokens.next().trim());
+
+          if (iteration <= 0) {
+            throw new IllegalStateException("Invalid iteration format");
+          }
         } else if (token.equalsIgnoreCase("-count") && tokens.hasNext()) {
           count = Integer.parseInt(tokens.next().trim());
 
@@ -291,11 +306,12 @@ class TestClient {
       }
       LOG.info("Using mode: " + mode);
       LOG.info("Using directory: " + directory);
+      LOG.info("Using iteration: " + iteration);
       LOG.info("Using count: " + count);
       LOG.info("Using minsize: " + minsize);
       LOG.info("Using maxsize: " + maxsize);
 
-      return new TestClient().run(new Parameters(mode, directory, count, minsize, maxsize), getConf());
+      return new TestClient().run(new Parameters(mode, directory, iteration, count, minsize, maxsize), getConf());
     }
   }
 
