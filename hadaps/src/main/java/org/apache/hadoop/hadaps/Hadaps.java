@@ -13,6 +13,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,7 @@ class Hadaps {
       duration - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(duration)));
   }
 
-  private int run(List<Generation> generations, Configuration configuration) {
+  private int run(List<Generation> generations, Configuration configuration) throws IOException {
     assert generations != null;
     assert configuration != null;
 
@@ -66,7 +67,8 @@ class Hadaps {
     private static final String HADAPS_CONF_BASE = "hadaps";
     private static final String HADAPS_CONF_GENERATIONS = HADAPS_CONF_BASE + ".generations";
     private static final String HADAPS_CONF_HOSTS = ".hosts";
-    private static final String HADAPS_CONF_REPLFACTOR = ".replfactor";
+    private static final String HADAPS_CONF_PRIORITY = ".priority";
+    private static final String HADAPS_CONF_FILES = HADAPS_CONF_BASE + ".files";
 
     @Override
     public int run(String[] args) throws Exception {
@@ -78,7 +80,7 @@ class Hadaps {
       if (generationsValue != null) {
         List<Generation> generations = new ArrayList<Generation>();
 
-        // For each generation extract hosts and replfactor
+        // For each generation extract hosts and priority
         String[] generationTokens = generationsValue.split(",");
         for (String generationToken : generationTokens) {
           generationToken = generationToken.trim();
@@ -105,18 +107,22 @@ class Hadaps {
                   "No hosts configured for generation " + generationToken);
             }
 
-            // Extract replication factor
-            int replFactor = configuration.getInt(
-                HADAPS_CONF_BASE + "." + generationToken + HADAPS_CONF_REPLFACTOR,
+            // Extract priority
+            int priority = configuration.getInt(
+                HADAPS_CONF_BASE + "." + generationToken + HADAPS_CONF_PRIORITY,
                 0);
-            if (replFactor <= 0) {
+            if (priority <= 0) {
               throw new IllegalStateException(
-                  "Invalid or no replication factor configured for generation "
+                  "Invalid or no priority configured for generation "
                       + generationToken);
             }
 
-            generations.add(new Generation(generationToken, hosts, replFactor));
+            generations.add(new Generation(generationToken, hosts, priority));
           }
+        }
+
+        if (generations.isEmpty()) {
+          throw new IllegalStateException("No valid generations configured");
         }
 
         Collections.sort(generations);

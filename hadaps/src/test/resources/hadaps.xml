@@ -10,7 +10,7 @@
         <value>192.168.56.21,192.168.56.22</value>
     </property>
     <property>
-        <name>hadaps.gen1.replfactor</name>
+        <name>hadaps.gen1.priority</name>
         <value>1</value>
     </property>
     <property>
@@ -18,7 +18,14 @@
         <value>192.168.56.23</value>
     </property>
     <property>
-        <name>hadaps.gen2.replfactor</name>
+        <name>hadaps.gen2.priority</name>
         <value>2</value>
+    </property>
+    <property>
+        <name>hadaps.files</name>
+        <value>
+            replfactor1:1,
+            replfactor2:2
+        </value>
     </property>
 </configuration>

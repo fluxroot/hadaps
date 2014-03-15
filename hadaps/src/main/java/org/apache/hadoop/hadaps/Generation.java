@@ -9,40 +9,37 @@ class Generation implements Comparable<Generation> {
 
   private final String name;
   private final List<String> hosts;
-  private final int replFactor;
+  private final int priority;
 
-  Generation(String name, List<String> hosts, int replFactor) {
+  Generation(String name, List<String> hosts, int priority) {
     if (name == null) throw new IllegalArgumentException();
     if (hosts == null) throw new IllegalArgumentException();
-    if (replFactor <= 0) throw new IllegalArgumentException();
+    if (priority <= 0) throw new IllegalArgumentException();
 
     this.name = name;
     this.hosts = hosts;
-    this.replFactor = replFactor;
+    this.priority = priority;
   }
 
-  /**
-   * We are sorting in descending order!
-   */
   @Override
   public int compareTo(Generation o) {
     if (o == null) throw new IllegalArgumentException();
 
-    if (this.replFactor < o.replFactor) {
-      return 1;
-    } else if (this.replFactor == o.replFactor) {
+    if (this.priority < o.priority) {
+      return -1;
+    } else if (this.priority == o.priority) {
       return 0;
     } else {
-      return -1;
+      return 1;
     }
   }
 
   @Override
   public String toString() {
     return String.format("%s {"
-        + "Replication Factor: %d, "
+        + "Priority: %d, "
         + "Hosts: %s"
-        + "}", name, replFactor, hosts);
+        + "}", name, priority, hosts);
   }
 
 }
