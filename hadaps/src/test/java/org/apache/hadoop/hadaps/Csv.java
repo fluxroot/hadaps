@@ -36,9 +36,10 @@ class Csv implements Closeable {
         prevStatistic = statistic;
       }
 
-      if (statistic.getIteration() != prevStatistic.getIteration()) {
+      // Write average of iteration
+      if (!statistic.getFilename().equals(prevStatistic.getFilename())) {
         write(new Statistic(
-            prevStatistic.getIteration(),
+            0,
             prevStatistic.getFilename(),
             prevStatistic.getReplication(),
             prevStatistic.getSize(),
@@ -51,6 +52,16 @@ class Csv implements Closeable {
 
       averageDuration += statistic.getDuration();
       prevStatistic = statistic;
+    }
+
+    // Write average of last iteration
+    if (prevStatistic != null) {
+      write(new Statistic(
+          0,
+          prevStatistic.getFilename(),
+          prevStatistic.getReplication(),
+          prevStatistic.getSize(),
+          averageDuration));
     }
   }
 
