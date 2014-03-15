@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -134,6 +135,8 @@ class TestClient {
     try {
       // Create CSV file
       csv = new Csv(parameters.csv);
+      LOG.info("Created csv file: {}", Paths.get(parameters.csv).toAbsolutePath().toString());
+      System.out.format("Created csv file: %s%n", Paths.get(parameters.csv).toAbsolutePath().toString());
 
       for (int i = 1; i < parameters.iteration + 1; ++i) {
         LOG.info("Starting iteration {}", i);
@@ -192,6 +195,8 @@ class TestClient {
       }
 
       // Write statistics to CSV file
+      LOG.info("Writing statistics to csv file");
+      System.out.format("Writing statistics to csv file");
       csv.write(statistics);
     } finally {
       if (csv != null) {
