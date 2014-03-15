@@ -7,7 +7,6 @@ import org.apache.hadoop.util.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
 class BalancerTask implements Callable<BalancerResult> {
@@ -33,15 +32,6 @@ class BalancerTask implements Callable<BalancerResult> {
     LOG.info("Balanced file {} in {}", balancerFile.getName(), Utils.getPrettyTime(duration));
 
     return new BalancerResult();
-  }
-
-  private void balance(BalancerFile balancerFile) throws IOException {
-    assert balancerFile != null;
-
-    // Check whether the replication factor matches
-    if (!balancerFile.hasProperReplication()) {
-      balancerFile.setProperReplication();
-    }
   }
 
 }
