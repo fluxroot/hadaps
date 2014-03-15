@@ -25,8 +25,8 @@ class Hadaps {
 
   private static final Logger LOG = LoggerFactory.getLogger(Hadaps.class);
 
-  private static final String USAGE = "Usage: java "
-      + Hadaps.class.getSimpleName();
+  private static final String USAGE = String.format("Usage: java %s%n",
+      Hadaps.class.getSimpleName());
 
   private int run(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration)
       throws IOException, InterruptedException {
@@ -49,7 +49,8 @@ class Hadaps {
     }
 
     long duration = Time.now() - startTime;
-    LOG.info("Balancing took " + Utils.getPrettyTime(duration));
+    LOG.info("Balancing took {}", Utils.getPrettyTime(duration));
+    System.out.format("Balancing took %s%n", Utils.getPrettyTime(duration));
 
     return 0;
   }
@@ -188,6 +189,7 @@ class Hadaps {
       System.exit(ToolRunner.run(new HadapsConfiguration(), new Cli(), args));
     } catch (Throwable e) {
       LOG.error("Exiting " + Hadaps.class.getSimpleName() + " due to an exception", e);
+      System.err.format("Error: %s%n", e.toString());
       System.exit(-1);
     }
   }
