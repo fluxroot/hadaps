@@ -90,17 +90,21 @@ class Balancer {
       if (stats != null && stats.length > 0) {
         // We have some matching paths
 
+        List<BalancerFile> matchingFiles = new ArrayList<BalancerFile>();
+
         for (FileStatus stat : stats) {
-          populateBalancerFiles(balancerFiles, stat, parameterFile, fileSystem);
+          populateBalancerFiles(matchingFiles, stat, parameterFile, fileSystem);
         }
 
-        Collections.sort(balancerFiles);
+        balancerFiles.addAll(matchingFiles);
 
-        LOG.info("Matching files for pattern \"{}\": {}", globPath.toString(), balancerFiles);
+        LOG.info("Matching files for pattern \"{}\": {}", globPath.toString(), matchingFiles);
       } else {
         LOG.info("No matching files for pattern \"{}\"", globPath.toString());
       }
     }
+
+    Collections.sort(balancerFiles);
 
     return balancerFiles;
   }
