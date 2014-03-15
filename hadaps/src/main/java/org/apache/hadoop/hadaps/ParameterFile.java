@@ -3,12 +3,12 @@
  */
 package org.apache.hadoop.hadaps;
 
-class File implements Comparable<File> {
+class ParameterFile implements Comparable<ParameterFile> {
 
   private final String name;
   private final short replFactor;
 
-  File(String name, short replFactor) {
+  ParameterFile(String name, short replFactor) {
     if (name == null) throw new IllegalArgumentException();
     if (replFactor <= 0) throw new IllegalArgumentException();
 
@@ -25,7 +25,7 @@ class File implements Comparable<File> {
   }
 
   @Override
-  public int compareTo(File o) {
+  public int compareTo(ParameterFile o) {
     if (o == null) throw new IllegalArgumentException();
 
     if (this.replFactor < o.replFactor) {

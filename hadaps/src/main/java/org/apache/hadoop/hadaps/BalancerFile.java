@@ -11,16 +11,16 @@ import java.io.IOException;
 class BalancerFile implements Comparable<BalancerFile> {
 
   private final FileStatus status;
-  private final File file;
+  private final ParameterFile parameterFile;
   private final FileSystem fileSystem;
 
-  BalancerFile(FileStatus status, File file, FileSystem fileSystem) {
+  BalancerFile(FileStatus status, ParameterFile parameterFile, FileSystem fileSystem) {
     if (status == null) throw new IllegalArgumentException();
-    if (file == null) throw new IllegalArgumentException();
+    if (parameterFile == null) throw new IllegalArgumentException();
     if (fileSystem == null) throw new IllegalArgumentException();
 
     this.status = status;
-    this.file = file;
+    this.parameterFile = parameterFile;
     this.fileSystem = fileSystem;
   }
 
@@ -29,18 +29,18 @@ class BalancerFile implements Comparable<BalancerFile> {
   }
 
   boolean hasProperReplication() {
-    return status.getReplication() == file.getReplication();
+    return status.getReplication() == parameterFile.getReplication();
   }
 
   void setProperReplication() throws IOException {
-    fileSystem.setReplication(status.getPath(), file.getReplication());
+    fileSystem.setReplication(status.getPath(), parameterFile.getReplication());
   }
 
   @Override
   public int compareTo(BalancerFile o) {
     if (o == null) throw new IllegalArgumentException();
 
-    return this.file.compareTo(o.file);
+    return this.parameterFile.compareTo(o.parameterFile);
   }
 
   @Override

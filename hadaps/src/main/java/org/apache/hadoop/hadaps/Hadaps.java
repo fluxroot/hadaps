@@ -28,14 +28,14 @@ class Hadaps {
   private static final String USAGE = "Usage: java "
       + Hadaps.class.getSimpleName();
 
-  private int run(List<Generation> generations, List<File> files, Configuration configuration)
+  private int run(List<Generation> generations, List<ParameterFile> parameterFiles, Configuration configuration)
       throws IOException, InterruptedException {
     assert generations != null;
-    assert files != null;
+    assert parameterFiles != null;
     assert configuration != null;
 
     LOG.info("Configured DataNodes: " + generations.toString());
-    LOG.info("Configured Files: " + files.toString());
+    LOG.info("Configured Files: " + parameterFiles.toString());
 
     long startTime = Time.now();
 
@@ -44,7 +44,7 @@ class Hadaps {
 
     // For each NameNode run the balancer
     for (URI nameNode : nameNodes) {
-      Balancer balancer = new Balancer(nameNode, generations, files, configuration);
+      Balancer balancer = new Balancer(nameNode, generations, parameterFiles, configuration);
       balancer.run();
     }
 
@@ -67,9 +67,9 @@ class Hadaps {
       Configuration configuration = getConf();
 
       List<Generation> generations = parseGenerations(configuration);
-      List<File> files = parseFiles(configuration);
+      List<ParameterFile> parameterFiles = parseFiles(configuration);
 
-      return new Hadaps().run(generations, files, configuration);
+      return new Hadaps().run(generations, parameterFiles, configuration);
     }
 
     private List<Generation> parseGenerations(Configuration configuration) {
@@ -132,12 +132,12 @@ class Hadaps {
       }
     }
 
-    private List<File> parseFiles(Configuration configuration) {
+    private List<ParameterFile> parseFiles(Configuration configuration) {
       assert configuration != null;
 
       String filesValue = configuration.get(HADAPS_CONF_FILES);
       if (filesValue != null) {
-        List<File> files = new ArrayList<File>();
+        List<ParameterFile> parameterFiles = new ArrayList<ParameterFile>();
 
         String[] fileTokens = filesValue.split(",");
         for (String fileToken : fileTokens) {
@@ -159,20 +159,20 @@ class Hadaps {
               // Extract name
               String name = tokens[1].trim();
 
-              files.add(new File(name, replFactor));
+              parameterFiles.add(new ParameterFile(name, replFactor));
             } else {
               LOG.warn("Invalid format. Skipping token: " + fileToken);
             }
           }
         }
 
-        if (files.isEmpty()) {
+        if (parameterFiles.isEmpty()) {
           throw new IllegalStateException("No valid files configured");
         }
 
-        Collections.sort(files);
+        Collections.sort(parameterFiles);
 
-        return files;
+        return parameterFiles;
       } else {
         throw new IllegalStateException("No files configured");
       }

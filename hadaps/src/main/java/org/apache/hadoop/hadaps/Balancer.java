@@ -25,7 +25,7 @@ class Balancer {
 
   private final URI nameNode;
   private final List<Generation> generations;
-  private final List<File> files;
+  private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
 
   private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
@@ -33,15 +33,15 @@ class Balancer {
   private final CompletionService<BalancerResult> completionService =
       new ExecutorCompletionService<BalancerResult>(threadPool);
 
-  Balancer(URI nameNode, List<Generation> generations, List<File> files, Configuration configuration) {
+  Balancer(URI nameNode, List<Generation> generations, List<ParameterFile> parameterFiles, Configuration configuration) {
     if (nameNode == null) throw new IllegalArgumentException();
     if (generations == null) throw new IllegalArgumentException();
-    if (files == null) throw new IllegalArgumentException();
+    if (parameterFiles == null) throw new IllegalArgumentException();
     if (configuration == null) throw new IllegalArgumentException();
 
     this.nameNode = nameNode;
     this.generations = generations;
-    this.files = files;
+    this.parameterFiles = parameterFiles;
     this.configuration = configuration;
   }
 
@@ -82,8 +82,8 @@ class Balancer {
     List<BalancerFile> balancerFiles = new ArrayList<BalancerFile>();
 
     // Iterate over each pattern
-    for (File file : files) {
-      Path globPath = new Path(file.getName());
+    for (ParameterFile parameterFile : parameterFiles) {
+      Path globPath = new Path(parameterFile.getName());
       FileSystem fileSystem = globPath.getFileSystem(configuration);
       FileStatus[] stats = fileSystem.globStatus(globPath);
 
@@ -91,7 +91,7 @@ class Balancer {
         // We have some matching paths
 
         for (FileStatus stat : stats) {
-          populateBalancerFiles(balancerFiles, stat, file, fileSystem);
+          populateBalancerFiles(balancerFiles, stat, parameterFile, fileSystem);
         }
 
         Collections.sort(balancerFiles);
@@ -106,21 +106,21 @@ class Balancer {
   }
 
   private void populateBalancerFiles(
-      List<BalancerFile> balancerFiles, FileStatus status, File file, FileSystem fileSystem)
+      List<BalancerFile> balancerFiles, FileStatus status, ParameterFile parameterFile, FileSystem fileSystem)
       throws IOException {
     assert balancerFiles != null;
     assert status != null;
-    assert file != null;
+    assert parameterFile != null;
     assert fileSystem != null;
 
     if (status.isFile()) {
-      balancerFiles.add(new BalancerFile(status, file, fileSystem));
+      balancerFiles.add(new BalancerFile(status, parameterFile, fileSystem));
     } else if (status.isDirectory()) {
       // Recurse into directory
 
       FileStatus[] stats = fileSystem.listStatus(status.getPath());
       for (FileStatus stat : stats) {
-        populateBalancerFiles(balancerFiles, stat, file, fileSystem);
+        populateBalancerFiles(balancerFiles, stat, parameterFile, fileSystem);
       }
     }
   }
