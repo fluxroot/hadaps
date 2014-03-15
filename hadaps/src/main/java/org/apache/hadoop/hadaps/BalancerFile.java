@@ -3,14 +3,19 @@
  */
 package org.apache.hadoop.hadaps;
 
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 class BalancerFile implements Comparable<BalancerFile> {
 
-  private final FileStatus status;
+  private static final Logger LOG = LoggerFactory.getLogger(BalancerFile.class);
+
+  private FileStatus status;
   private final ParameterFile parameterFile;
   private final FileSystem fileSystem;
 
@@ -28,12 +33,35 @@ class BalancerFile implements Comparable<BalancerFile> {
     return status.getPath().toString();
   }
 
-  boolean hasProperReplication() {
-    return status.getReplication() == parameterFile.getReplication();
-  }
+  void setProperReplication(boolean wait) throws IOException, InterruptedException {
+    if (status.getReplication() != parameterFile.getReplication()) {
+      LOG.info("Setting replication for {} to {}", getName(), parameterFile.getReplication());
+      fileSystem.setReplication(status.getPath(), parameterFile.getReplication());
 
-  void setProperReplication() throws IOException {
-    fileSystem.setReplication(status.getPath(), parameterFile.getReplication());
+      if (wait) {
+        LOG.info("Waiting for replication to adjust for {}", getName());
+        boolean done = false;
+        while (!done) {
+          done = true;
+
+          // Refresh status
+          status = fileSystem.getFileStatus(status.getPath());
+
+          // For each block location, check number of hosts
+          BlockLocation[] locations = fileSystem.getFileBlockLocations(status, 0, status.getLen());
+          for (BlockLocation location : locations) {
+            if (location.getHosts().length != parameterFile.getReplication()) {
+              done = false;
+              break;
+            }
+          }
+
+          if (!done) {
+            Thread.sleep(1000);
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -46,7 +74,7 @@ class BalancerFile implements Comparable<BalancerFile> {
   @Override
   public String toString() {
     return String.format("{Replication Factor: %d, Path: %s}",
-        status.getReplication(), status.getPath().toString());
+        status.getReplication(), getName());
   }
 
 }
