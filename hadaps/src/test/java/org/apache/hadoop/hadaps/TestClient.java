@@ -123,6 +123,8 @@ class TestClient {
     List<Path> files = getFiles(fileContext, directory);
     LOG.debug("Using files: {}", files.toString());
 
+    Collection<Statistic> statistics = new ArrayList<Statistic>();
+
     for (int i = 1; i < parameters.iteration + 1; ++i) {
       LOG.info("Starting iteration {}", i);
       System.out.format("Starting iteration %d%n", i);
@@ -134,6 +136,7 @@ class TestClient {
         // Get the file
         int index = random.nextInt(filesPool.size());
         Path file = fileContext.makeQualified(filesPool.get(index));
+        FileStatus status = fileContext.getFileStatus(file);
 
         // Read the file
         FSDataInputStream inputStream = null;
@@ -159,6 +162,8 @@ class TestClient {
           if (file.getName().equalsIgnoreCase(digest)) {
             LOG.info("Iteration {}: Read file {} in {}", i, file.toString(), Utils.getPrettyTime(duration));
             System.out.format("Iteration %d: Read file %s in %s%n", i, file.toString(), Utils.getPrettyTime(duration));
+
+            statistics.add(new Statistic(i, file.toString(), status.getReplication(), status.getLen(), duration));
           } else {
             LOG.warn("Content does not match filename: {} != {}", digest, file.toString());
             System.out.format("Content does not match filename: %s != %s%n", digest, file.toString());
