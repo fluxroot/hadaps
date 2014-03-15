@@ -9,18 +9,17 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
+import org.apache.hadoop.util.Time;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.Random;
+import java.util.*;
 
 class TestClient {
 
@@ -67,29 +66,102 @@ class TestClient {
   private TestClient() {
   }
 
+  private List<Path> getFiles(FileContext fileContext, Path path) throws IOException {
+    assert fileContext != null;
+    assert path != null;
+
+    List<Path> files = new ArrayList<Path>();
+
+    populateFiles(files, fileContext, path);
+
+    return files;
+  }
+
+  private void populateFiles(List<Path> files, FileContext fileContext, Path path) throws IOException {
+    assert files != null;
+    assert fileContext != null;
+    assert path != null;
+
+    FileStatus status = fileContext.getFileStatus(path);
+    if (status.isFile()) {
+      files.add(path);
+    } else if (status.isDirectory()) {
+      RemoteIterator<FileStatus> stats = fileContext.listStatus(path);
+      while (stats.hasNext()) {
+        FileStatus stat = stats.next();
+        populateFiles(files, fileContext, stat.getPath());
+      }
+    }
+  }
+
   /**
-   * Reads a file from HDFS.
+   * Reads files from HDFS.
    */
   private void read(Parameters parameters, Configuration configuration)
       throws IOException, NoSuchAlgorithmException {
+    assert parameters != null;
+    assert configuration != null;
+
     MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-    Path file = new Path(parameters.directory);
+    Random random = new Random();
+
+    // Switch to test directory
     FileContext fileContext = FileContext.getFileContext(configuration);
-    FSDataInputStream inputStream = null;
-    try {
-      inputStream = fileContext.open(file);
+    Path directory = fileContext.makeQualified(new Path(parameters.directory));
+    if (!fileContext.util().exists(directory)) {
+      throw new FileNotFoundException("Directory does not exist: " + directory.toString());
+    } else if (!fileContext.getFileStatus(directory).isDirectory()) {
+      throw new FileNotFoundException("Is not a directory: " + directory.toString());
+    }
+    fileContext.setWorkingDirectory(directory);
+    LOG.debug("Working directory is now: {}", fileContext.getWorkingDirectory().toString());
 
-      byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
-      int length = inputStream.read(bytes);
-      while (length != -1) {
-        messageDigest.update(bytes, 0, length);
-        length = inputStream.read(bytes);
-      }
+    // Get list of all files
+    List<Path> files = getFiles(fileContext, directory);
+    LOG.debug("Using files: {}", files.toString());
 
-      LOG.info("SHA-1: " + Utils.getHexString(messageDigest.digest()));
-    } finally {
-      if (inputStream != null) {
-        inputStream.close();
+    // Read all files in random order
+    List<Path> filesPool = new ArrayList<Path>(files);
+
+    while (filesPool.size() > 0) {
+      // Get the file
+      int index = random.nextInt(filesPool.size());
+      Path file = fileContext.makeQualified(filesPool.get(index));
+
+      // Read the file
+      FSDataInputStream inputStream = null;
+      try {
+        inputStream = fileContext.open(file);
+
+        LOG.info("Reading file {}", file.toString());
+        System.out.format("Reading file %s%n", file.toString());
+
+        long startTime = Time.now();
+
+        byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
+        int length = inputStream.read(bytes);
+        while (length != -1) {
+          messageDigest.update(bytes, 0, length);
+          length = inputStream.read(bytes);
+        }
+
+        long duration = Time.now() - startTime;
+
+        // Compare the digest
+        String digest = Utils.getHexString(messageDigest.digest());
+        if (file.getName().equalsIgnoreCase(digest)) {
+          LOG.info("Read file {} in {}", file.toString(), Utils.getPrettyTime(duration));
+          System.out.format("Read file %s in %s%n", file.toString(), Utils.getPrettyTime(duration));
+        } else {
+          LOG.warn("Content does not match filename: {} != {}", digest, file.toString());
+          System.out.format("Content does not match filename: %s != %s", digest, file.toString());
+        }
+
+        filesPool.remove(index);
+      } finally {
+        if (inputStream != null) {
+          inputStream.close();
+        }
       }
     }
   }
@@ -99,6 +171,9 @@ class TestClient {
    */
   private void write(Parameters parameters, Configuration configuration)
       throws IOException, NoSuchAlgorithmException {
+    assert parameters != null;
+    assert configuration != null;
+
     MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
     Random random = new Random();
 
@@ -156,6 +231,9 @@ class TestClient {
 
   private int run(Parameters parameters, Configuration configuration)
       throws IOException, NoSuchAlgorithmException {
+    assert parameters != null;
+    assert configuration != null;
+
     switch (parameters.mode) {
       case READ:
         read(parameters, configuration);
