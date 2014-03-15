@@ -30,7 +30,7 @@ class BalancerTask implements Callable<BalancerResult> {
 
     long duration = Time.now() - startTime;
 
-    LOG.info("Balanced file {} in {}", balancerFile.getName(), TimeUtils.getPrettyTime(duration));
+    LOG.info("Balanced file {} in {}", balancerFile.getName(), Utils.getPrettyTime(duration));
 
     return new BalancerResult();
   }

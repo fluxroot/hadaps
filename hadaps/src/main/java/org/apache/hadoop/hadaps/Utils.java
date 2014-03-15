@@ -5,9 +5,9 @@ package org.apache.hadoop.hadaps;
 
 import java.util.concurrent.TimeUnit;
 
-class TimeUtils {
+class Utils {
 
-  private TimeUtils() {
+  private Utils() {
   }
 
   static String getPrettyTime(long duration) {

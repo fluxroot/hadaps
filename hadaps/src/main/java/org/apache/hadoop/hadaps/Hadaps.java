@@ -49,7 +49,7 @@ class Hadaps {
     }
 
     long duration = Time.now() - startTime;
-    LOG.info("Balancing took " + TimeUtils.getPrettyTime(duration));
+    LOG.info("Balancing took " + Utils.getPrettyTime(duration));
 
     return 0;
   }
