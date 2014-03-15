@@ -28,7 +28,8 @@ class Hadaps {
   private static final String USAGE = String.format("Usage: java %s%n",
       Hadaps.class.getSimpleName());
 
-  private int run(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration)
+  private int run(List<ParameterGeneration> parameterGenerations,
+      List<ParameterFile> parameterFiles, Configuration configuration)
       throws IOException, InterruptedException {
     assert parameterGenerations != null;
     assert parameterFiles != null;
