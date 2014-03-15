@@ -42,7 +42,8 @@ class Hadaps {
       duration - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(duration)));
   }
 
-  private int run(List<Generation> generations, List<File> files, Configuration configuration) throws IOException {
+  private int run(List<Generation> generations, List<File> files, Configuration configuration)
+      throws IOException, InterruptedException {
     assert generations != null;
     assert files != null;
     assert configuration != null;
