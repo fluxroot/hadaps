@@ -30,6 +30,8 @@ class Hadaps {
       + Hadaps.class.getSimpleName();
 
   private static String getPrettyTime(long duration) {
+    assert duration > 0;
+
     return String.format(
       "%02d:%02d:%02d.%03d",
       TimeUnit.MILLISECONDS.toHours(duration),
@@ -40,11 +42,13 @@ class Hadaps {
       duration - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(duration)));
   }
 
-  private int run(List<Generation> generations, Configuration configuration) throws IOException {
+  private int run(List<Generation> generations, List<File> files, Configuration configuration) throws IOException {
     assert generations != null;
+    assert files != null;
     assert configuration != null;
 
     LOG.info("Configured DataNodes: " + generations.toString());
+    LOG.info("Configured Files: " + files.toString());
 
     long startTime = Time.now();
 
@@ -53,7 +57,7 @@ class Hadaps {
 
     // For each NameNode run the balancer
     for (URI nameNode : nameNodes) {
-      Balancer balancer = new Balancer(nameNode, generations, configuration);
+      Balancer balancer = new Balancer(nameNode, generations, files, configuration);
       balancer.run();
     }
 
@@ -75,7 +79,15 @@ class Hadaps {
       // Parse configuration
       Configuration configuration = getConf();
 
-      // Parse generations
+      List<Generation> generations = parseGenerations(configuration);
+      List<File> files = parseFiles(configuration);
+
+      return new Hadaps().run(generations, files, configuration);
+    }
+
+    private List<Generation> parseGenerations(Configuration configuration) {
+      assert configuration != null;
+
       String generationsValue = configuration.get(HADAPS_CONF_GENERATIONS);
       if (generationsValue != null) {
         List<Generation> generations = new ArrayList<Generation>();
@@ -127,9 +139,55 @@ class Hadaps {
 
         Collections.sort(generations);
 
-        return new Hadaps().run(generations, configuration);
+        return generations;
       } else {
         throw new IllegalStateException("No generations configured");
+      }
+    }
+
+    private List<File> parseFiles(Configuration configuration) {
+      assert configuration != null;
+
+      String filesValue = configuration.get(HADAPS_CONF_FILES);
+      if (filesValue != null) {
+        List<File> files = new ArrayList<File>();
+
+        String[] fileTokens = filesValue.split(",");
+        for (String fileToken : fileTokens) {
+          fileToken = fileToken.trim();
+          if (!fileToken.equalsIgnoreCase("")) {
+
+            String[] tokens = fileToken.split(":", 2);
+            if (tokens.length == 2) {
+
+              // Extract replication factor
+              int replFactor;
+              try {
+                replFactor = Integer.parseInt(tokens[0].trim());
+              } catch (NumberFormatException e) {
+                LOG.warn("Invalid format. Skipping token: " + fileToken);
+                continue;
+              }
+
+              // Extract name
+              String name = tokens[1].trim();
+
+              files.add(new File(name, replFactor));
+            } else {
+              LOG.warn("Invalid format. Skipping token: " + fileToken);
+            }
+          }
+        }
+
+        if (files.isEmpty()) {
+          throw new IllegalStateException("No valid files configured");
+        }
+
+        Collections.sort(files);
+
+        return files;
+      } else {
+        throw new IllegalStateException("No files configured");
       }
     }
   }

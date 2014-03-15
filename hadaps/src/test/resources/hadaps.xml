@@ -24,8 +24,8 @@
     <property>
         <name>hadaps.files</name>
         <value>
-            replfactor1:1,
-            replfactor2:2
+            1:replfactor1,
+            2:replfactor2
         </value>
     </property>
 </configuration>
