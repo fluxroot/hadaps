@@ -3,6 +3,7 @@
  */
 package org.apache.hadoop.hadaps;
 
+import javax.xml.bind.annotation.adapters.HexBinaryAdapter;
 import java.util.concurrent.TimeUnit;
 
 class Utils {
@@ -21,6 +22,10 @@ class Utils {
       TimeUnit.MILLISECONDS.toSeconds(duration)
           - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)),
       duration - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(duration)));
+  }
+
+  static String getHexString(byte[] bytes) {
+    return new HexBinaryAdapter().marshal(bytes);
   }
 
 }
