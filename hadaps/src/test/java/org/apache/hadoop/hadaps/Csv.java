@@ -29,7 +29,8 @@ class Csv implements Closeable {
 
     Collections.sort(statistics);
 
-    long averageDuration = 0;
+    long totalDuration = 0;
+    int iterationCount = 0;
     Statistic prevStatistic = null;
     for (Statistic statistic : statistics) {
       if (prevStatistic == null) {
@@ -43,14 +44,16 @@ class Csv implements Closeable {
             prevStatistic.getFilename(),
             prevStatistic.getReplication(),
             prevStatistic.getSize(),
-            averageDuration));
+            totalDuration / iterationCount));
 
-        averageDuration = 0;
+        totalDuration = 0;
+        iterationCount = 0;
       }
 
       write(statistic);
 
-      averageDuration += statistic.getDuration();
+      totalDuration += statistic.getDuration();
+      ++iterationCount;
       prevStatistic = statistic;
     }
 
@@ -61,7 +64,7 @@ class Csv implements Closeable {
           prevStatistic.getFilename(),
           prevStatistic.getReplication(),
           prevStatistic.getSize(),
-          averageDuration));
+          totalDuration / iterationCount));
     }
   }
 
