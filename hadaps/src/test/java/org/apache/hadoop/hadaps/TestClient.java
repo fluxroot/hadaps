@@ -335,6 +335,7 @@ class TestClient {
       }
       LOG.info("Using mode: " + mode);
       LOG.info("Using directory: " + directory);
+      LOG.info("Using csv: " + csv);
       LOG.info("Using iteration: " + iteration);
       LOG.info("Using count: " + count);
       LOG.info("Using minsize: " + minsize);
