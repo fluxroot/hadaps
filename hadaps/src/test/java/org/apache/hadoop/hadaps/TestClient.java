@@ -58,7 +58,8 @@ class TestClient {
     private final int minsize;
     private final int maxsize;
 
-    private Parameters(Mode mode, String directory, String csv, int iteration, int count, int minsize, int maxsize) {
+    private Parameters(Mode mode, String directory, String csv,
+        int iteration, int count, int minsize, int maxsize) {
       this.mode = mode;
       this.directory = directory;
       this.csv = csv;
@@ -83,7 +84,8 @@ class TestClient {
     return files;
   }
 
-  private void populateFiles(List<Path> files, FileContext fileContext, Path path) throws IOException {
+  private void populateFiles(List<Path> files, FileContext fileContext, Path path)
+      throws IOException {
     assert files != null;
     assert fileContext != null;
     assert path != null;
@@ -168,10 +170,13 @@ class TestClient {
             // Compare the digest
             String digest = Utils.getHexString(messageDigest.digest());
             if (file.getName().equalsIgnoreCase(digest)) {
-              LOG.info("Iteration {}: Read file {} in {}", i, file.toString(), Utils.getPrettyTime(duration));
-              System.out.format("Iteration %d: Read file %s in %s%n", i, file.toString(), Utils.getPrettyTime(duration));
+              LOG.info("Iteration {}: Read file {} in {}", i,
+                  file.toString(), Utils.getPrettyTime(duration));
+              System.out.format("Iteration %d: Read file %s in %s%n", i,
+                  file.toString(), Utils.getPrettyTime(duration));
 
-              statistics.add(new Statistic(i, file.toString(), status.getReplication(), status.getLen(), duration));
+              statistics.add(new Statistic(
+                  i, file.toString(), status.getReplication(), status.getLen(), duration));
             } else {
               LOG.warn("Content does not match filename: {} != {}", digest, file.toString());
               System.out.format("Content does not match filename: %s != %s%n", digest, file.toString());
@@ -335,7 +340,8 @@ class TestClient {
       LOG.info("Using minsize: " + minsize);
       LOG.info("Using maxsize: " + maxsize);
 
-      return new TestClient().run(new Parameters(mode, directory, csv, iteration, count, minsize, maxsize), getConf());
+      return new TestClient().run(new Parameters(
+          mode, directory, csv, iteration, count, minsize, maxsize), getConf());
     }
   }
 
