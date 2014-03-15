@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>hadaps.generations</name>
+        <value>gen1,gen2</value>
+    </property>
+    <property>
+        <name>hadaps.gen1.hosts</name>
+        <value>192.168.56.21,192.168.56.22</value>
+    </property>
+    <property>
+        <name>hadaps.gen1.replfactor</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>hadaps.gen2.hosts</name>
+        <value>192.168.56.23</value>
+    </property>
+    <property>
+        <name>hadaps.gen2.replfactor</name>
+        <value>2</value>
+    </property>
+</configuration>
