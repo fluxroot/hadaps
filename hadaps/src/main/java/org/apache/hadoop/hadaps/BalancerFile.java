@@ -33,6 +33,10 @@ class BalancerFile implements Comparable<BalancerFile> {
     return status.getPath().toString();
   }
 
+  BlockLocation[] getBlockLocations() throws IOException {
+    return fileSystem.getFileBlockLocations(status, 0, status.getLen());
+  }
+
   void setProperReplication(boolean wait) throws IOException, InterruptedException {
     if (status.getReplication() != parameterFile.getReplication()) {
       LOG.info("Setting replication for {} to {}", getName(), parameterFile.getReplication());
