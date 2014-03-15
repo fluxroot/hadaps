@@ -15,4 +15,13 @@ class BalancerNode {
     this.dataNode = dataNode;
   }
 
+  public String getName() {
+    return dataNode.getName();
+  }
+
+  @Override
+  public String toString() {
+    return getName();
+  }
+
 }

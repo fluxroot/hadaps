@@ -8,6 +8,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,8 @@ class Balancer {
   private final List<ParameterGeneration> parameterGenerations;
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
+
+  private final List<BalancerNode> dataNodes = new ArrayList<BalancerNode>();
 
   private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
       CONCURRENT_TASKS, CONCURRENT_TASKS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
@@ -50,11 +54,21 @@ class Balancer {
     }
     DistributedFileSystem dfs = (DistributedFileSystem) fileSystem;
 
+    // Populate data nodes
+    DatanodeInfo[] dataNodeInfos = dfs.getDataNodeStats(HdfsConstants.DatanodeReportType.LIVE);
+    for (DatanodeInfo dataNode : dataNodeInfos) {
+      if (dataNode.isDecommissioned() || dataNode.isDecommissionInProgress()) {
+        continue;
+      }
+
+      dataNodes.add(new BalancerNode(dataNode));
+    }
+
     // Populate balancer files
     List<BalancerFile> balancerFiles = getBalancerFiles(dfs);
 
     // Create our policy
-    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dfs, parameterGenerations);
+    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dataNodes, parameterGenerations);
     policy.initialize(configuration);
 
     // Now balance each file
@@ -69,7 +83,7 @@ class Balancer {
         }
       }
 
-      completionService.submit(new BalancerTask(balancerFile, policy, dfs));
+      completionService.submit(new BalancerTask(balancerFile, policy, dfs, dataNodes));
     }
 
     // Await completion of any submitted task

@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -20,15 +21,18 @@ class BalancerTask implements Callable<BalancerResult> {
   private final BalancerFile balancerFile;
   private final IBlockPlacementPolicy policy;
   private final DistributedFileSystem dfs;
+  private final List<BalancerNode> dataNodes;
 
-  public BalancerTask(BalancerFile balancerFile, IBlockPlacementPolicy policy, DistributedFileSystem dfs) {
+  public BalancerTask(BalancerFile balancerFile, IBlockPlacementPolicy policy, DistributedFileSystem dfs, List<BalancerNode> dataNodes) {
     if (balancerFile == null) throw new IllegalArgumentException();
     if (policy == null) throw new IllegalArgumentException();
     if (dfs == null) throw new IllegalArgumentException();
+    if (dataNodes == null) throw new IllegalArgumentException();
 
     this.balancerFile = balancerFile;
     this.policy = policy;
     this.dfs = dfs;
+    this.dataNodes = dataNodes;
   }
 
   @Override
@@ -49,7 +53,16 @@ class BalancerTask implements Callable<BalancerResult> {
 
     // Now balance each block
     for (BlockLocation blockLocation : blockLocations) {
-      balance(blockLocation, targetNodes);
+      List<BalancerNode> currentNodes = new ArrayList<BalancerNode>();
+      for (BalancerNode dataNode : dataNodes) {
+        for (String host : blockLocation.getNames()) {
+          if (dataNode.getName().equals(host)) {
+            currentNodes.add(dataNode);
+          }
+        }
+      }
+
+      balance(currentNodes, targetNodes);
     }
 
     long duration = Time.now() - startTime;
@@ -60,9 +73,12 @@ class BalancerTask implements Callable<BalancerResult> {
     return new BalancerResult();
   }
 
-  private void balance(BlockLocation blockLocation, List<BalancerNode> targetNodes) throws IOException {
-    assert blockLocation != null;
+  private void balance(List<BalancerNode> currentNodes, List<BalancerNode> targetNodes) throws IOException {
+    assert currentNodes != null;
     assert targetNodes != null;
+
+    LOG.debug("Block locations: " + currentNodes.toString());
+    LOG.debug("Target nodes: " + targetNodes.toString());
 
 //    for (BalancerNode node : targetNodes) {
 //      if (node.hasBlock(blockLocation.)) {
