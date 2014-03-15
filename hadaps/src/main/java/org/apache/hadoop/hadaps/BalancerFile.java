@@ -4,18 +4,32 @@
 package org.apache.hadoop.hadaps;
 
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+
+import java.io.IOException;
 
 class BalancerFile implements Comparable<BalancerFile> {
 
   private final FileStatus status;
   private final File file;
+  private final FileSystem fileSystem;
 
-  BalancerFile(FileStatus status, File file) {
+  BalancerFile(FileStatus status, File file, FileSystem fileSystem) {
     if (status == null) throw new IllegalArgumentException();
     if (file == null) throw new IllegalArgumentException();
+    if (fileSystem == null) throw new IllegalArgumentException();
 
     this.status = status;
     this.file = file;
+    this.fileSystem = fileSystem;
+  }
+
+  boolean hasProperReplication() {
+    return status.getReplication() == file.getReplication();
+  }
+
+  void setProperReplication() throws IOException {
+    fileSystem.setReplication(status.getPath(), file.getReplication());
   }
 
   @Override

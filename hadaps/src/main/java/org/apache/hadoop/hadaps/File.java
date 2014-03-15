@@ -6,9 +6,9 @@ package org.apache.hadoop.hadaps;
 class File implements Comparable<File> {
 
   private final String name;
-  private final int replFactor;
+  private final short replFactor;
 
-  File(String name, int replFactor) {
+  File(String name, short replFactor) {
     if (name == null) throw new IllegalArgumentException();
     if (replFactor <= 0) throw new IllegalArgumentException();
 
@@ -18,6 +18,10 @@ class File implements Comparable<File> {
 
   String getName() {
     return name;
+  }
+
+  short getReplication() {
+    return replFactor;
   }
 
   @Override

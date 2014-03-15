@@ -47,8 +47,13 @@ class Balancer {
     }
   }
 
-  private void balance(BalancerFile balancerFile) {
+  private void balance(BalancerFile balancerFile) throws IOException {
     assert balancerFile != null;
+
+    // Check whether the replication factor matches
+    if (!balancerFile.hasProperReplication()) {
+      balancerFile.setProperReplication();
+    }
   }
 
   private List<BalancerFile> getBalancerFiles() throws IOException {
@@ -86,7 +91,7 @@ class Balancer {
     assert fileSystem != null;
 
     if (status.isFile()) {
-      balancerFiles.add(new BalancerFile(status, file));
+      balancerFiles.add(new BalancerFile(status, file, fileSystem));
     } else if (status.isDirectory()) {
       // Recurse into directory
 

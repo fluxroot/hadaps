@@ -161,9 +161,9 @@ class Hadaps {
             if (tokens.length == 2) {
 
               // Extract replication factor
-              int replFactor;
+              short replFactor;
               try {
-                replFactor = Integer.parseInt(tokens[0].trim());
+                replFactor = Short.parseShort(tokens[0].trim());
               } catch (NumberFormatException e) {
                 LOG.warn("Invalid format. Skipping token: " + fileToken);
                 continue;
