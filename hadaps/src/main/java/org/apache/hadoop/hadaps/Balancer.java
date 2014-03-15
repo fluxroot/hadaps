@@ -15,15 +15,23 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 
 class Balancer {
 
   private static final Logger LOG = LoggerFactory.getLogger(Balancer.class);
 
+  private static final int CONCURRENT_TASKS = 3;
+
   private final URI nameNode;
   private final List<Generation> generations;
   private final List<File> files;
   private final Configuration configuration;
+
+  private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+      CONCURRENT_TASKS, CONCURRENT_TASKS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+  private final CompletionService<BalancerResult> completionService =
+      new ExecutorCompletionService<BalancerResult>(threadPool);
 
   Balancer(URI nameNode, List<Generation> generations, List<File> files, Configuration configuration) {
     if (nameNode == null) throw new IllegalArgumentException();
@@ -37,23 +45,37 @@ class Balancer {
     this.configuration = configuration;
   }
 
-  void run() throws IOException {
+  void run() throws IOException, InterruptedException {
     // Populate balancer files
     List<BalancerFile> balancerFiles = getBalancerFiles();
 
     // Now balance each file
     for (BalancerFile balancerFile : balancerFiles) {
-      balance(balancerFile);
-    }
-  }
+      if (threadPool.getActiveCount() >= CONCURRENT_TASKS) {
+        // Await completion of any submitted task
 
-  private void balance(BalancerFile balancerFile) throws IOException {
-    assert balancerFile != null;
+        try {
+          BalancerResult result = completionService.take().get();
+        } catch (ExecutionException e) {
+          LOG.warn(e.getLocalizedMessage(), e);
+        }
+      }
 
-    // Check whether the replication factor matches
-    if (!balancerFile.hasProperReplication()) {
-      balancerFile.setProperReplication();
+      completionService.submit(new BalancerTask(balancerFile));
     }
+
+    // Await completion of any submitted task
+    while (threadPool.getActiveCount() > 0) {
+      try {
+        BalancerResult result = completionService.take().get();
+      } catch (ExecutionException e) {
+        LOG.warn(e.getLocalizedMessage(), e);
+      }
+    }
+
+    // Initiate a proper shutdown
+    threadPool.shutdown();
+    threadPool.awaitTermination(10, TimeUnit.SECONDS);
   }
 
   private List<BalancerFile> getBalancerFiles() throws IOException {
@@ -84,7 +106,8 @@ class Balancer {
   }
 
   private void populateBalancerFiles(
-      List<BalancerFile> balancerFiles, FileStatus status, File file, FileSystem fileSystem) throws IOException {
+      List<BalancerFile> balancerFiles, FileStatus status, File file, FileSystem fileSystem)
+      throws IOException {
     assert balancerFiles != null;
     assert status != null;
     assert file != null;
