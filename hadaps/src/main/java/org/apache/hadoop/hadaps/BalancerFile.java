@@ -24,6 +24,10 @@ class BalancerFile implements Comparable<BalancerFile> {
     this.fileSystem = fileSystem;
   }
 
+  String getName() {
+    return status.getPath().toString();
+  }
+
   boolean hasProperReplication() {
     return status.getReplication() == file.getReplication();
   }
@@ -41,7 +45,7 @@ class BalancerFile implements Comparable<BalancerFile> {
 
   @Override
   public String toString() {
-    return String.format("Replication Factor: %d, Path: %s",
+    return String.format("{Replication Factor: %d, Path: %s}",
         status.getReplication(), status.getPath().toString());
   }
 
