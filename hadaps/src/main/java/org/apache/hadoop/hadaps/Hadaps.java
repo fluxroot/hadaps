@@ -40,12 +40,12 @@ class Hadaps {
 
     long startTime = Time.now();
 
-    Collection<URI> nameNodes = DFSUtil.getNsServiceRpcUris(configuration);
-    LOG.info("NameNodes: " + nameNodes);
+    Collection<URI> nameNodeUris = DFSUtil.getNsServiceRpcUris(configuration);
+    LOG.info("NameNodes: " + nameNodeUris);
 
     // For each NameNode run the balancer
-    for (URI nameNode : nameNodes) {
-      Balancer balancer = new Balancer(nameNode, parameterGenerations, parameterFiles, configuration);
+    for (URI nameNodeUri : nameNodeUris) {
+      Balancer balancer = new Balancer(nameNodeUri, parameterGenerations, parameterFiles, configuration);
       balancer.run();
     }
 
