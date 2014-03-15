@@ -24,8 +24,9 @@
     <property>
         <name>hadaps.files</name>
         <value>
-            1:replfactor1,
-            2:replfactor2
+            1:hadaps.testdir/replication1,
+            2:hadaps.testdir/replication2,
+            3:hadaps.testdir/replication3
         </value>
     </property>
 </configuration>
