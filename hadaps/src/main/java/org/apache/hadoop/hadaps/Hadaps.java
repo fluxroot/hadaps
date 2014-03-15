@@ -40,6 +40,9 @@ class Hadaps {
   }
 
   private int run(List<Generation> generations, Configuration configuration) {
+    assert generations != null;
+    assert configuration != null;
+
     LOG.info("Configured DataNodes: " + generations.toString());
 
     long startTime = Time.now();

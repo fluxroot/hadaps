@@ -11,7 +11,11 @@ class Generation implements Comparable<Generation> {
   private final List<String> hosts;
   private final int replFactor;
 
-  public Generation(String name, List<String> hosts, int replFactor) {
+  Generation(String name, List<String> hosts, int replFactor) {
+    if (name == null) throw new IllegalArgumentException();
+    if (hosts == null) throw new IllegalArgumentException();
+    if (replFactor <= 0) throw new IllegalArgumentException();
+
     this.name = name;
     this.hosts = hosts;
     this.replFactor = replFactor;
@@ -22,6 +26,8 @@ class Generation implements Comparable<Generation> {
    */
   @Override
   public int compareTo(Generation o) {
+    if (o == null) throw new IllegalArgumentException();
+
     if (this.replFactor < o.replFactor) {
       return 1;
     } else if (this.replFactor == o.replFactor) {
