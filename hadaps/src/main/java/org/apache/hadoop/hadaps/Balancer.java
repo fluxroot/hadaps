@@ -24,7 +24,7 @@ class Balancer {
   private static final int CONCURRENT_TASKS = 3;
 
   private final URI nameNode;
-  private final List<Generation> generations;
+  private final List<ParameterGeneration> parameterGenerations;
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
 
@@ -33,14 +33,14 @@ class Balancer {
   private final CompletionService<BalancerResult> completionService =
       new ExecutorCompletionService<BalancerResult>(threadPool);
 
-  Balancer(URI nameNode, List<Generation> generations, List<ParameterFile> parameterFiles, Configuration configuration) {
+  Balancer(URI nameNode, List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration) {
     if (nameNode == null) throw new IllegalArgumentException();
-    if (generations == null) throw new IllegalArgumentException();
+    if (parameterGenerations == null) throw new IllegalArgumentException();
     if (parameterFiles == null) throw new IllegalArgumentException();
     if (configuration == null) throw new IllegalArgumentException();
 
     this.nameNode = nameNode;
-    this.generations = generations;
+    this.parameterGenerations = parameterGenerations;
     this.parameterFiles = parameterFiles;
     this.configuration = configuration;
   }

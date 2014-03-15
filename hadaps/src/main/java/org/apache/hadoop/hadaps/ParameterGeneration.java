@@ -5,13 +5,13 @@ package org.apache.hadoop.hadaps;
 
 import java.util.List;
 
-class Generation implements Comparable<Generation> {
+class ParameterGeneration implements Comparable<ParameterGeneration> {
 
   private final String name;
   private final List<String> hosts;
   private final int priority;
 
-  Generation(String name, List<String> hosts, int priority) {
+  ParameterGeneration(String name, List<String> hosts, int priority) {
     if (name == null) throw new IllegalArgumentException();
     if (hosts == null) throw new IllegalArgumentException();
     if (priority <= 0) throw new IllegalArgumentException();
@@ -22,7 +22,7 @@ class Generation implements Comparable<Generation> {
   }
 
   @Override
-  public int compareTo(Generation o) {
+  public int compareTo(ParameterGeneration o) {
     if (o == null) throw new IllegalArgumentException();
 
     if (this.priority < o.priority) {

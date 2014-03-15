@@ -28,13 +28,13 @@ class Hadaps {
   private static final String USAGE = "Usage: java "
       + Hadaps.class.getSimpleName();
 
-  private int run(List<Generation> generations, List<ParameterFile> parameterFiles, Configuration configuration)
+  private int run(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration)
       throws IOException, InterruptedException {
-    assert generations != null;
+    assert parameterGenerations != null;
     assert parameterFiles != null;
     assert configuration != null;
 
-    LOG.info("Configured DataNodes: " + generations.toString());
+    LOG.info("Configured DataNodes: " + parameterGenerations.toString());
     LOG.info("Configured Files: " + parameterFiles.toString());
 
     long startTime = Time.now();
@@ -44,7 +44,7 @@ class Hadaps {
 
     // For each NameNode run the balancer
     for (URI nameNode : nameNodes) {
-      Balancer balancer = new Balancer(nameNode, generations, parameterFiles, configuration);
+      Balancer balancer = new Balancer(nameNode, parameterGenerations, parameterFiles, configuration);
       balancer.run();
     }
 
@@ -66,18 +66,18 @@ class Hadaps {
       // Parse configuration
       Configuration configuration = getConf();
 
-      List<Generation> generations = parseGenerations(configuration);
+      List<ParameterGeneration> parameterGenerations = parseGenerations(configuration);
       List<ParameterFile> parameterFiles = parseFiles(configuration);
 
-      return new Hadaps().run(generations, parameterFiles, configuration);
+      return new Hadaps().run(parameterGenerations, parameterFiles, configuration);
     }
 
-    private List<Generation> parseGenerations(Configuration configuration) {
+    private List<ParameterGeneration> parseGenerations(Configuration configuration) {
       assert configuration != null;
 
       String generationsValue = configuration.get(HADAPS_CONF_GENERATIONS);
       if (generationsValue != null) {
-        List<Generation> generations = new ArrayList<Generation>();
+        List<ParameterGeneration> parameterGenerations = new ArrayList<ParameterGeneration>();
 
         // For each generation extract hosts and priority
         String[] generationTokens = generationsValue.split(",");
@@ -116,17 +116,17 @@ class Hadaps {
                       + generationToken);
             }
 
-            generations.add(new Generation(generationToken, hosts, priority));
+            parameterGenerations.add(new ParameterGeneration(generationToken, hosts, priority));
           }
         }
 
-        if (generations.isEmpty()) {
+        if (parameterGenerations.isEmpty()) {
           throw new IllegalStateException("No valid generations configured");
         }
 
-        Collections.sort(generations);
+        Collections.sort(parameterGenerations);
 
-        return generations;
+        return parameterGenerations;
       } else {
         throw new IllegalStateException("No generations configured");
       }
