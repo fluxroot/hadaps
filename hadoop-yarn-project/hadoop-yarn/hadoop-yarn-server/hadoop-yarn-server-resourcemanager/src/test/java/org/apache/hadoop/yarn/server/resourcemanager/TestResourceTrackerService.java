@@ -49,6 +49,7 @@ import org.apache.hadoop.yarn.server.api.protocolrecords.RegisterNodeManagerRequ
 import org.apache.hadoop.yarn.server.api.protocolrecords.RegisterNodeManagerResponse;
 import org.apache.hadoop.yarn.server.api.records.NodeAction;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMApp;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttemptImpl;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.QueueMetrics;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.SchedulerEvent;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -468,6 +469,9 @@ public class TestResourceTrackerService {
         ClusterMetrics.getMetrics().getUnhealthyNMs());
   }
 
+  /**
+   * Test verifies node registration with completed containers
+   */
   @Test
   public void testNodeRegistrationWithContainers() throws Exception {
     MockRM rm = new MockRM();
@@ -478,13 +482,22 @@ public class TestResourceTrackerService {
     MockNM nm = rm.registerNode("host1:1234", 8192);
     nm.nodeHeartbeat(true);
 
-    // Register node with some container statuses
+    // Case 1: AppAttemptId is null
     ContainerStatus status = ContainerStatus.newInstance(
         ContainerId.newInstance(ApplicationAttemptId.newInstance(
             app.getApplicationId(), 2), 1),
         ContainerState.COMPLETE, "Dummy Completed", 0);
+    nm.registerNode(Collections.singletonList(status));
+    assertEquals("Incorrect number of nodes", 1,
+        rm.getRMContext().getRMNodes().size());
 
-    // The following shouldn't throw NPE
+    // Case 2: Master container is null
+    RMAppAttemptImpl currentAttempt =
+        (RMAppAttemptImpl) app.getCurrentAppAttempt();
+    currentAttempt.setMasterContainer(null);
+    status = ContainerStatus.newInstance(
+        ContainerId.newInstance(currentAttempt.getAppAttemptId(), 0),
+        ContainerState.COMPLETE, "Dummy Completed", 0);
     nm.registerNode(Collections.singletonList(status));
     assertEquals("Incorrect number of nodes", 1,
         rm.getRMContext().getRMNodes().size());
