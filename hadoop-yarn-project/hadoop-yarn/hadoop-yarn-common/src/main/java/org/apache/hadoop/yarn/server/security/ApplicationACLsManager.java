@@ -101,8 +101,14 @@ public class ApplicationACLsManager {
       return true;
     }
 
-    AccessControlList applicationACL = this.applicationACLS
-        .get(applicationId).get(applicationAccessType);
+    AccessControlList applicationACL = null;
+    Map<ApplicationAccessType, AccessControlList> appAcls =
+        this.applicationACLS.get(applicationId);
+    if (appAcls == null) {
+      LOG.error("Couldn't find ACLs for application " + applicationId);
+    } else {
+      applicationACL = appAcls.get(applicationAccessType);
+    }
     if (applicationACL == null) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("ACL not found for access-type " + applicationAccessType
