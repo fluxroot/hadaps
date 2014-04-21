@@ -3,7 +3,7 @@
  */
 package org.apache.hadoop.hadaps;
 
-class TestHadaps {
+class RunHadaps {
 
   public static void main(String[] args) {
     Hadaps.main(args);
