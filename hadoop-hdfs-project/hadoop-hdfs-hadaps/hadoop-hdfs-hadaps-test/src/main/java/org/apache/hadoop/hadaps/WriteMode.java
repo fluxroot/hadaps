@@ -110,7 +110,7 @@ class WriteMode {
           SequenceFile.Writer.keyClass(Text.class),
           SequenceFile.Writer.valueClass(LongWritable.class),
           SequenceFile.Writer.compression(SequenceFile.CompressionType.NONE));
-      writer.append(new Text(controlFile.toString()), new LongWritable(size));
+      writer.append(new Text(controlFile.toUri().getPath()), new LongWritable(size));
       writer.close();
 
       LOG.info("Created file {}", digestFile.toString());
