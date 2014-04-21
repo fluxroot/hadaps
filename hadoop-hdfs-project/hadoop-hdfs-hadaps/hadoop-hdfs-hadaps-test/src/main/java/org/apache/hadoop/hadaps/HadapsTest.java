@@ -134,7 +134,7 @@ public class HadapsTest extends Configured implements Tool {
   }
 
   public static void main(String[] args) {
-    if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
+    if (args.length == 0 || (args.length == 1 && args[0].equalsIgnoreCase("-help"))) {
       System.out.print(USAGE);
       System.exit(0);
     }
