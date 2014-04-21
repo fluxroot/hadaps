@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 @InterfaceAudience.Private
-class Hadaps {
+public class Hadaps {
 
   private static final Logger LOG = LoggerFactory.getLogger(Hadaps.class);
 
