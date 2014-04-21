@@ -39,7 +39,7 @@ public class HadapsTest extends Configured implements Tool {
     // Default parameters
     Parameters.Mode mode = Parameters.DEFAULT.mode;
     String inputDirectory = Parameters.DEFAULT.inputDirectory;
-    String outputDirectory = Parameters.DEFAULT.outputDirectory;
+    String outputDirectory = null;
     String csv = Parameters.DEFAULT.csv;
     int iteration = Parameters.DEFAULT.iteration;
     int count = Parameters.DEFAULT.count;
@@ -86,6 +86,14 @@ public class HadapsTest extends Configured implements Tool {
         if (minsize <= 0 || maxsize <= 0) {
           throw new IllegalStateException("Invalid size format");
         }
+      }
+    }
+
+    if (outputDirectory == null) {
+      if (mode == Parameters.Mode.WRITE) {
+        outputDirectory = Parameters.DEFAULT.inputDirectory;
+      } else {
+        outputDirectory = Parameters.DEFAULT.outputDirectory;
       }
     }
 
