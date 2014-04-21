@@ -68,8 +68,8 @@ class WriteMode {
       FSDataOutputStream outputStream = null;
       String digest = null;
 
-      int size = (parameters.minsize + random.nextInt(parameters.maxsize - parameters.minsize + 1))
-          * ONE_MEGABYTE;
+      long size = (parameters.minsize + random.nextInt(parameters.maxsize - parameters.minsize + 1))
+          * (long) ONE_MEGABYTE;
 
       try {
         // Create file
@@ -80,13 +80,13 @@ class WriteMode {
             Options.CreateOpts.createParent(), Options.CreateOpts.blockSize(blockSize));
 
         // Write random bytes
-        int currentSize = size;
+        long currentSize = size;
         byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
         while (currentSize > 0) {
-          int length = Math.min(currentSize, ONE_MEGABYTE);
+          long length = Math.min(currentSize, ONE_MEGABYTE);
           random.nextBytes(bytes);
-          messageDigest.update(bytes, 0, length);
-          outputStream.write(bytes, 0, length);
+          messageDigest.update(bytes, 0, (int) length);
+          outputStream.write(bytes, 0, (int) length);
           currentSize -= length;
         }
 
