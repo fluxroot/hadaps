@@ -104,7 +104,7 @@ class WriteMode {
       files.add(digestFile);
 
       // Create control file
-      Path controlFile = digestFile.suffix(".control");
+      Path controlFile = new Path(digestFile + ".control");
       SequenceFile.Writer writer = SequenceFile.createWriter(configuration,
           SequenceFile.Writer.file(controlFile),
           SequenceFile.Writer.keyClass(Text.class),
