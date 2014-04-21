@@ -14,4 +14,12 @@
   <description>Hadoop Data Placement Strategy Test</description>
   <name>Hadoop Data Placement Strategy Test</name>
   <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>
