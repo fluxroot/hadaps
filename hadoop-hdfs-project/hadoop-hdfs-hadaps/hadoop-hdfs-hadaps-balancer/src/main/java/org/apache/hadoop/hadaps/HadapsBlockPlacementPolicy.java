@@ -33,26 +33,37 @@ class HadapsBlockPlacementPolicy implements IBlockPlacementPolicy {
   public Map<ExtendedBlock, List<DatanodeInfo>> chooseTarget(FileStatus fileStatus) throws IOException {
     if (fileStatus == null) throw new IllegalArgumentException();
 
-    Map<ExtendedBlock, List<DatanodeInfo>> blocks = new HashMap<ExtendedBlock, List<DatanodeInfo>>();
+    Map<ExtendedBlock, List<DatanodeInfo>> blockMap = new HashMap<ExtendedBlock, List<DatanodeInfo>>();
 
     Random random = new Random();
 
-    // Get block locations for file
+    // Initialize blockMap
     LocatedBlocks locatedBlocks = nameNode.getLocatedBlocks(fileStatus);
     for (LocatedBlock locatedBlock : locatedBlocks.getLocatedBlocks()) {
-      List<DatanodeInfo> targetNodes = new ArrayList<DatanodeInfo>();
-
-      while (targetNodes.size() < locatedBlock.getLocations().length) {
-        DatanodeInfo dataNode = dataNodes.get(random.nextInt(dataNodes.size()));
-        if (!targetNodes.contains(dataNode)) {
-          targetNodes.add(dataNode);
-        }
-      }
-
-      blocks.put(locatedBlock.getBlock(), targetNodes);
+      blockMap.put(locatedBlock.getBlock(), new ArrayList<DatanodeInfo>());
     }
 
-    return blocks;
+    for (int replication = 0; replication < fileStatus.getReplication(); ++replication) {
+      // Iterate over all blocks and distribute them evenly across all dataNodes
+      for (ExtendedBlock extendedBlock : blockMap.keySet()) {
+        // Initialize targetNodes with all available dataNodes
+        List<DatanodeInfo> targetNodes = new ArrayList<DatanodeInfo>(dataNodes);
+
+        // Get the current list of target nodes for this block
+        List<DatanodeInfo> blockTargetNodes = blockMap.get(extendedBlock);
+
+        // Pick a random dataNode
+        DatanodeInfo dataNode = targetNodes.get(random.nextInt(targetNodes.size()));
+        while (blockTargetNodes.contains(dataNode)) {
+          dataNode = targetNodes.get(random.nextInt(targetNodes.size()));
+        }
+
+        blockTargetNodes.add(dataNode);
+        targetNodes.remove(dataNode);
+      }
+    }
+
+    return blockMap;
   }
 
 }
