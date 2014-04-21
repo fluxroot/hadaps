@@ -74,9 +74,10 @@ class WriteMode {
       try {
         // Create file
         file = new Path(Long.toString(System.currentTimeMillis()));
+        long blockSize = file.getFileSystem(configuration).getDefaultBlockSize(file);
         outputStream = fileContext.create(
             file, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE),
-            Options.CreateOpts.createParent());
+            Options.CreateOpts.createParent(), Options.CreateOpts.blockSize(blockSize));
 
         // Write random bytes
         int currentSize = size;
