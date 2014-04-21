@@ -28,10 +28,10 @@ class BalancerTask implements Callable<Integer> {
   private static final Logger LOG = LoggerFactory.getLogger(BalancerTask.class);
 
   private final BalancerFile balancerFile;
-  private final IBlockPlacementPolicy policy;
+  private final HadapsBlockPlacementPolicy policy;
   private final BalancerNameNode nameNode;
 
-  BalancerTask(BalancerFile balancerFile, IBlockPlacementPolicy policy, BalancerNameNode nameNode) {
+  BalancerTask(BalancerFile balancerFile, HadapsBlockPlacementPolicy policy, BalancerNameNode nameNode) {
     if (balancerFile == null) throw new IllegalArgumentException();
     if (policy == null) throw new IllegalArgumentException();
     if (nameNode == null) throw new IllegalArgumentException();

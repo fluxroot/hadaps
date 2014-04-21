@@ -8,8 +8,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.net.NetworkTopology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,6 @@ class Balancer {
   // TODO: Set a proper concurrency value
   private static final int CONCURRENT_TASKS = 1;
 
-  private final List<ParameterGeneration> parameterGenerations;
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
 
@@ -35,13 +33,10 @@ class Balancer {
   private final CompletionService<Integer> completionService =
       new ExecutorCompletionService<Integer>(threadPool);
 
-  Balancer(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles,
-      Configuration configuration) {
-    if (parameterGenerations == null) throw new IllegalArgumentException();
+  Balancer(List<ParameterFile> parameterFiles, Configuration configuration) {
     if (parameterFiles == null) throw new IllegalArgumentException();
     if (configuration == null) throw new IllegalArgumentException();
 
-    this.parameterGenerations = parameterGenerations;
     this.parameterFiles = parameterFiles;
     this.configuration = configuration;
   }
@@ -57,19 +52,9 @@ class Balancer {
     // Create BalancerNameNode
     BalancerNameNode nameNode = new BalancerNameNode(fileSystem);
 
-    // Populate data nodes
-    List<DatanodeInfo> dataNodes = new ArrayList<DatanodeInfo>();
-    DatanodeInfo[] dataNodeInfos = fileSystem.getDataNodeStats(HdfsConstants.DatanodeReportType.LIVE);
-    for (DatanodeInfo dataNode : dataNodeInfos) {
-      if (dataNode.isDecommissioned() || dataNode.isDecommissionInProgress()) {
-        continue;
-      }
-
-      dataNodes.add(dataNode);
-    }
-
     // Create our policy
-    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dataNodes, parameterGenerations, nameNode);
+    HadapsBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(configuration, null,
+        NetworkTopology.getInstance(configuration));
 
     // Populate balancer files
     List<BalancerFile> files = getBalancerFiles(fileSystem);
