@@ -21,25 +21,28 @@ class ParameterGeneration implements Comparable<ParameterGeneration> {
     this.priority = priority;
   }
 
+  String getName() {
+    return name;
+  }
+
+  List<String> getHosts() {
+    return hosts;
+  }
+
+  int getPriority() {
+    return priority;
+  }
+
   @Override
   public int compareTo(ParameterGeneration o) {
     if (o == null) throw new IllegalArgumentException();
 
-    if (this.priority < o.priority) {
-      return -1;
-    } else if (this.priority == o.priority) {
-      return 0;
-    } else {
-      return 1;
-    }
+    return Integer.compare(this.priority, o.priority);
   }
 
   @Override
   public String toString() {
-    return String.format("%s {"
-        + "Priority: %d, "
-        + "Hosts: %s"
-        + "}", name, priority, hosts);
+    return String.format("%s {Priority: %d, Hosts: %s}", name, priority, hosts);
   }
 
 }

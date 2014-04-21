@@ -6,14 +6,14 @@ package org.apache.hadoop.hadaps;
 class ParameterFile implements Comparable<ParameterFile> {
 
   private final String name;
-  private final short replFactor;
+  private final short replication;
 
-  ParameterFile(String name, short replFactor) {
+  ParameterFile(String name, short replication) {
     if (name == null) throw new IllegalArgumentException();
-    if (replFactor <= 0) throw new IllegalArgumentException();
+    if (replication <= 0) throw new IllegalArgumentException();
 
     this.name = name;
-    this.replFactor = replFactor;
+    this.replication = replication;
   }
 
   String getName() {
@@ -21,25 +21,19 @@ class ParameterFile implements Comparable<ParameterFile> {
   }
 
   short getReplication() {
-    return replFactor;
+    return replication;
   }
 
   @Override
   public int compareTo(ParameterFile o) {
     if (o == null) throw new IllegalArgumentException();
 
-    if (this.replFactor < o.replFactor) {
-      return -1;
-    } else if (this.replFactor == o.replFactor) {
-      return 0;
-    } else {
-      return 1;
-    }
+    return Short.compare(this.replication, o.replication);
   }
 
   @Override
   public String toString() {
-    return String.format("{Replication Factor: %d, Name: %s}", replFactor, name);
+    return String.format("{Replication: %d, Name: %s}", replication, name);
   }
 
 }

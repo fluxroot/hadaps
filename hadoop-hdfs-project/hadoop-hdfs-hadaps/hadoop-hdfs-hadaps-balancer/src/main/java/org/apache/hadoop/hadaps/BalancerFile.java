@@ -5,7 +5,7 @@ package org.apache.hadoop.hadaps;
 
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,58 +15,53 @@ class BalancerFile implements Comparable<BalancerFile> {
 
   private static final Logger LOG = LoggerFactory.getLogger(BalancerFile.class);
 
-  private FileStatus status;
+  private FileStatus fileStatus;
   private final ParameterFile parameterFile;
-  private final DistributedFileSystem fileSystem;
+  private final FileSystem fileSystem;
 
-  BalancerFile(FileStatus status, ParameterFile parameterFile, DistributedFileSystem fileSystem) {
-    if (status == null) throw new IllegalArgumentException();
+  BalancerFile(FileStatus fileStatus, ParameterFile parameterFile, FileSystem fileSystem) {
+    if (fileStatus == null) throw new IllegalArgumentException();
     if (parameterFile == null) throw new IllegalArgumentException();
     if (fileSystem == null) throw new IllegalArgumentException();
 
-    this.status = status;
+    this.fileStatus = fileStatus;
     this.parameterFile = parameterFile;
     this.fileSystem = fileSystem;
   }
 
+  FileStatus getFileStatus() {
+    return fileStatus;
+  }
+
   String getName() {
-    return status.getPath().toString();
+    return fileStatus.getPath().toString();
   }
 
-  BlockLocation[] getBlockLocations() throws IOException {
-    return fileSystem.getFileBlockLocations(status, 0, status.getLen());
-  }
+  void setProperReplication(boolean verify) throws IOException, InterruptedException {
+    LOG.info("Setting replication for {} to {}", getName(), parameterFile.getReplication());
+    fileSystem.setReplication(fileStatus.getPath(), parameterFile.getReplication());
 
-  short getReplication() {
-    return status.getReplication();
-  }
+    if (verify) {
+      LOG.info("Verifying replication for {}", getName());
+      boolean done = false;
+      while (!done) {
+        done = true;
 
-  void setProperReplication(boolean wait) throws IOException, InterruptedException {
-    if (status.getReplication() != parameterFile.getReplication()) {
-      LOG.info("Setting replication for {} to {}", getName(), parameterFile.getReplication());
-      fileSystem.setReplication(status.getPath(), parameterFile.getReplication());
+        // Refresh fileStatus
+        fileStatus = fileSystem.getFileStatus(fileStatus.getPath());
 
-      if (wait) {
-        LOG.info("Waiting for replication to adjust for {}", getName());
-        boolean done = false;
-        while (!done) {
-          done = true;
-
-          // Refresh status
-          status = fileSystem.getFileStatus(status.getPath());
-
-          // For each block location, check number of hosts
-          BlockLocation[] locations = fileSystem.getFileBlockLocations(status, 0, status.getLen());
-          for (BlockLocation location : locations) {
-            if (location.getHosts().length != parameterFile.getReplication()) {
-              done = false;
-              break;
-            }
+        // For each block location, check number of hosts
+        BlockLocation[] locations = fileSystem.getFileBlockLocations(fileStatus.getPath(), 0, fileStatus.getLen());
+        for (BlockLocation location : locations) {
+          if (location.getHosts().length != parameterFile.getReplication()) {
+            LOG.info("Waiting for replication to adjust for {}", getName());
+            done = false;
+            break;
           }
+        }
 
-          if (!done) {
-            Thread.sleep(1000);
-          }
+        if (!done) {
+          Thread.sleep(1000);
         }
       }
     }
@@ -81,8 +76,7 @@ class BalancerFile implements Comparable<BalancerFile> {
 
   @Override
   public String toString() {
-    return String.format("{Replication Factor: %d, Path: %s}",
-        status.getReplication(), getName());
+    return String.format("{Replication: %d, Path: %s}", fileStatus.getReplication(), getName());
   }
 
 }

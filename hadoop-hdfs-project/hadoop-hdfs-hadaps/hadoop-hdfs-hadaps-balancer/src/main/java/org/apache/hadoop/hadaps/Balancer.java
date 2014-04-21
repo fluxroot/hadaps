@@ -23,20 +23,20 @@ class Balancer {
 
   private static final Logger LOG = LoggerFactory.getLogger(Balancer.class);
 
-  private static final int CONCURRENT_TASKS = 3;
+  // TODO: Set a proper concurrency value
+  private static final int CONCURRENT_TASKS = 1;
 
   private final List<ParameterGeneration> parameterGenerations;
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
 
-  private final List<BalancerNode> dataNodes = new ArrayList<BalancerNode>();
-
   private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
       CONCURRENT_TASKS, CONCURRENT_TASKS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-  private final CompletionService<BalancerResult> completionService =
-      new ExecutorCompletionService<BalancerResult>(threadPool);
+  private final CompletionService<Integer> completionService =
+      new ExecutorCompletionService<Integer>(threadPool);
 
-  Balancer(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles, Configuration configuration) {
+  Balancer(List<ParameterGeneration> parameterGenerations, List<ParameterFile> parameterFiles,
+      Configuration configuration) {
     if (parameterGenerations == null) throw new IllegalArgumentException();
     if (parameterFiles == null) throw new IllegalArgumentException();
     if (configuration == null) throw new IllegalArgumentException();
@@ -48,48 +48,51 @@ class Balancer {
 
   void run() throws IOException, InterruptedException {
     // Get the distributed filesystem
-    FileSystem fileSystem = FileSystem.get(configuration);
-    if (!(fileSystem instanceof DistributedFileSystem)) {
-      throw new IllegalStateException("Filesystem " + fileSystem.getUri() + " is not an HDFS filesystem");
+    FileSystem fs = FileSystem.get(configuration);
+    if (!(fs instanceof DistributedFileSystem)) {
+      throw new IllegalStateException("Filesystem " + fs.getUri() + " is not an HDFS filesystem");
     }
-    DistributedFileSystem dfs = (DistributedFileSystem) fileSystem;
+    DistributedFileSystem fileSystem = (DistributedFileSystem) fs;
+
+    // Create BalancerNameNode
+    BalancerNameNode nameNode = new BalancerNameNode(fileSystem);
 
     // Populate data nodes
-    DatanodeInfo[] dataNodeInfos = dfs.getDataNodeStats(HdfsConstants.DatanodeReportType.LIVE);
+    List<DatanodeInfo> dataNodes = new ArrayList<DatanodeInfo>();
+    DatanodeInfo[] dataNodeInfos = fileSystem.getDataNodeStats(HdfsConstants.DatanodeReportType.LIVE);
     for (DatanodeInfo dataNode : dataNodeInfos) {
       if (dataNode.isDecommissioned() || dataNode.isDecommissionInProgress()) {
         continue;
       }
 
-      dataNodes.add(new BalancerNode(dataNode));
+      dataNodes.add(dataNode);
     }
 
-    // Populate balancer files
-    List<BalancerFile> balancerFiles = getBalancerFiles(dfs);
-
     // Create our policy
-    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dataNodes, parameterGenerations);
-    policy.initialize(configuration);
+    IBlockPlacementPolicy policy = new HadapsBlockPlacementPolicy(dataNodes, parameterGenerations, nameNode);
+
+    // Populate balancer files
+    List<BalancerFile> files = getBalancerFiles(fileSystem);
 
     // Now balance each file
-    for (BalancerFile balancerFile : balancerFiles) {
+    for (BalancerFile file : files) {
       if (threadPool.getActiveCount() >= CONCURRENT_TASKS) {
         // Await completion of any submitted task
 
         try {
-          BalancerResult result = completionService.take().get();
+          completionService.take().get();
         } catch (ExecutionException e) {
           LOG.warn(e.getLocalizedMessage(), e);
         }
       }
 
-      completionService.submit(new BalancerTask(balancerFile, policy, dfs, dataNodes));
+      completionService.submit(new BalancerTask(file, policy, nameNode));
     }
 
     // Await completion of any submitted task
     while (threadPool.getActiveCount() > 0) {
       try {
-        BalancerResult result = completionService.take().get();
+        completionService.take().get();
       } catch (ExecutionException e) {
         LOG.warn(e.getLocalizedMessage(), e);
       }
@@ -130,9 +133,8 @@ class Balancer {
     return balancerFiles;
   }
 
-  private void populateBalancerFiles(
-      List<BalancerFile> balancerFiles, FileStatus status, ParameterFile parameterFile, DistributedFileSystem fileSystem)
-      throws IOException {
+  private void populateBalancerFiles(List<BalancerFile> balancerFiles, FileStatus status,
+      ParameterFile parameterFile, DistributedFileSystem fileSystem) throws IOException {
     assert balancerFiles != null;
     assert status != null;
     assert parameterFile != null;
