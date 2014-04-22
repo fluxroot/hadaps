@@ -14,7 +14,7 @@ class BalancerNameNode {
 
   private final ClientProtocol clientProtocol;
 
-  BalancerNameNode(DistributedFileSystem fileSystem) throws IOException {
+  BalancerNameNode(DistributedFileSystem fileSystem) {
     if (fileSystem == null) throw new IllegalArgumentException();
 
     // Get ClientProtocol

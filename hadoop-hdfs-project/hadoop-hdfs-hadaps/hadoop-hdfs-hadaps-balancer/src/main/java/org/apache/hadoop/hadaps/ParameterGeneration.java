@@ -27,10 +27,6 @@ class ParameterGeneration implements Comparable<ParameterGeneration> {
     }
   }
 
-  String getName() {
-    return name;
-  }
-
   List<InetAddress> getHosts() {
     return hosts;
   }
