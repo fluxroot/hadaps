@@ -22,8 +22,7 @@ class Balancer {
 
   private static final Logger LOG = LoggerFactory.getLogger(Balancer.class);
 
-  // TODO: Set a proper concurrency value
-  private static final int CONCURRENT_TASKS = 1;
+  private static final int CONCURRENT_TASKS = 3;
 
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;

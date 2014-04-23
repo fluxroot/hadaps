@@ -62,7 +62,7 @@ public class HadapsBlockPlacementPolicy extends BlockPlacementPolicy {
     }
   }
 
-  public Map<ExtendedBlock, List<DatanodeInfo>> chooseTarget(FileStatus fileStatus) throws IOException {
+  public synchronized Map<ExtendedBlock, List<DatanodeInfo>> chooseTarget(FileStatus fileStatus) throws IOException {
     if (fileStatus == null) throw new IllegalArgumentException();
 
     // Populate extended block list

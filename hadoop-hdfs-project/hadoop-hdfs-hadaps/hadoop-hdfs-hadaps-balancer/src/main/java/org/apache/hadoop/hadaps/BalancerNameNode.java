@@ -21,7 +21,7 @@ class BalancerNameNode {
     clientProtocol = fileSystem.getClient().getNamenode();
   }
 
-  LocatedBlocks getLocatedBlocks(FileStatus fileStatus) throws IOException {
+  synchronized LocatedBlocks getLocatedBlocks(FileStatus fileStatus) throws IOException {
     if (fileStatus == null) throw new IllegalArgumentException();
 
     return clientProtocol.getBlockLocations(fileStatus.getPath().toUri().getPath(), 0, fileStatus.getLen());
