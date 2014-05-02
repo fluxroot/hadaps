@@ -21,6 +21,8 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ReadMode {
 
@@ -41,17 +43,25 @@ public class ReadMode {
     }
 
     @Override
-    protected void map(Text key, LongWritable value, Context context) throws IOException, InterruptedException {
+    protected void map(Text key, LongWritable value, final Context context) throws IOException, InterruptedException {
       String filename = key.toString();
       filename = filename.substring(0, filename.lastIndexOf('.'));
       Path file = new Path(filename);
       long size = value.get();
       short replication = fileContext.getFileStatus(file).getReplication();
+      Timer timer = new Timer(true);
 
       // Open file
       InputStream inputStream = null;
       try {
         inputStream = fileContext.open(file);
+
+        timer.schedule(new TimerTask() {
+          @Override
+          public void run() {
+            context.progress();
+          }
+        }, 0, 60000);
 
         long currentSize = 0;
         byte[] bytes = new byte[ONE_MEGABYTE]; // 1 megabyte
@@ -70,6 +80,7 @@ public class ReadMode {
         // Write statistic
         context.write(new Text(filename), new Text(replication + " " + currentSize + " " + duration));
       } finally {
+        timer.cancel();
         if (inputStream != null) {
           inputStream.close();
         }
