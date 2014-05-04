@@ -63,7 +63,7 @@ class HadapsConfiguration extends HdfsConfiguration {
         }
 
         // Extract weight
-        float weight = configuration.getInt(HADAPS_CONF_BASE + "." + generationToken + HADAPS_CONF_WEIGHT, 0);
+        float weight = configuration.getFloat(HADAPS_CONF_BASE + "." + generationToken + HADAPS_CONF_WEIGHT, 0);
         if (weight <= 0) {
           throw new IllegalStateException("Invalid or no weight configured for generation " + generationToken);
         }
