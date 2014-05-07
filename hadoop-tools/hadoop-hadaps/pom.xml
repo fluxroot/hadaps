@@ -10,14 +10,14 @@
     <version>2.3.1-SNAPSHOT</version>
     <relativePath>../../hadoop-project</relativePath>
   </parent>
-  <artifactId>hadoop-hdfs-hadaps</artifactId>
+  <artifactId>hadoop-hadaps</artifactId>
   <description>Hadoop Data Placement Strategy</description>
   <name>Hadoop Data Placement Strategy</name>
   <packaging>pom</packaging>
 
   <modules>
-    <module>hadoop-hdfs-hadaps-balancer</module>
-    <module>hadoop-hdfs-hadaps-test</module>
+    <module>hadoop-hadaps-balancer</module>
+    <module>hadoop-hadaps-test</module>
   </modules>
 
   <build>

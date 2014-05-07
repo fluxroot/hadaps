@@ -6,11 +6,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.hadoop</groupId>
-    <artifactId>hadoop-hdfs-hadaps</artifactId>
+    <artifactId>hadoop-hadaps</artifactId>
     <version>2.3.1-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
-  <artifactId>hadoop-hdfs-hadaps-test</artifactId>
+  <artifactId>hadoop-hadaps-test</artifactId>
   <description>Hadoop Data Placement Strategy Test</description>
   <name>Hadoop Data Placement Strategy Test</name>
   <packaging>jar</packaging>
