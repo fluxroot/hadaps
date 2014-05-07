@@ -27,6 +27,7 @@ class Balancer {
   private final List<ParameterFile> parameterFiles;
   private final Configuration configuration;
 
+  private int runningTasks = 0;
   private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
       CONCURRENT_TASKS, CONCURRENT_TASKS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
   private final CompletionService<Integer> completionService =
@@ -60,23 +61,26 @@ class Balancer {
 
     // Now balance each file
     for (BalancerFile file : files) {
-      if (threadPool.getActiveCount() >= CONCURRENT_TASKS) {
+      if (runningTasks >= CONCURRENT_TASKS) {
         // Await completion of any submitted task
 
         try {
           completionService.take().get();
+          --runningTasks;
         } catch (ExecutionException e) {
           LOG.warn(e.getLocalizedMessage(), e);
         }
       }
 
       completionService.submit(new BalancerTask(file, policy, nameNode));
+      ++runningTasks;
     }
 
     // Await completion of any submitted task
-    while (threadPool.getActiveCount() > 0) {
+    while (runningTasks > 0) {
       try {
         completionService.take().get();
+        --runningTasks;
       } catch (ExecutionException e) {
         LOG.warn(e.getLocalizedMessage(), e);
       }
