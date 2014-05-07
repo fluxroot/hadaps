@@ -105,6 +105,10 @@
       <outputDirectory>/share/hadoop/${hadoop.component}/sls</outputDirectory>
     </fileSet>
     <fileSet>
+      <directory>../hadoop-hadaps/src/main/conf</directory>
+      <outputDirectory>/etc/hadoop</outputDirectory>
+    </fileSet>
+    <fileSet>
       <directory>../hadoop-hadaps/target</directory>
       <outputDirectory>/share/hadoop/${hadoop.component}/sources</outputDirectory>
       <includes>
