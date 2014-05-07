@@ -43,6 +43,7 @@
     <module>hadoop-openstack</module>
     <module>hadoop-sls</module>
     <module>hadoop-hadaps</module>
+    <module>hadoop-hadaps-test</module>
   </modules>
 
   <build>
