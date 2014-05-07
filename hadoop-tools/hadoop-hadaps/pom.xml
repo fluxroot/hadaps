@@ -6,13 +6,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.hadoop</groupId>
-    <artifactId>hadoop-hadaps</artifactId>
+    <artifactId>hadoop-project</artifactId>
     <version>2.3.1-SNAPSHOT</version>
-    <relativePath>..</relativePath>
+    <relativePath>../../hadoop-project</relativePath>
   </parent>
-  <artifactId>hadoop-hadaps-balancer</artifactId>
-  <description>Hadoop Data Placement Strategy Balancer</description>
-  <name>Hadoop Data Placement Strategy Balancer</name>
+  <artifactId>hadoop-hadaps</artifactId>
+  <description>Hadoop Data Placement Strategy</description>
+  <name>Hadoop Data Placement Strategy</name>
   <packaging>jar</packaging>
 
   <dependencies>
