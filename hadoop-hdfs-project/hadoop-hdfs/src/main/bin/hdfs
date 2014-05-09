@@ -47,6 +47,7 @@ function print_usage(){
   echo "  haadmin              run a DFS HA admin client"
   echo "  fsck                 run a DFS filesystem checking utility"
   echo "  balancer             run a cluster balancing utility"
+  echo "  hadaps               run a Hadaps balancing utility"
   echo "  jmxget               get JMX exported values from NameNode or DataNode."
   echo "  oiv                  apply the offline fsimage viewer to an fsimage"
   echo "  oev                  apply the offline edits viewer to an edits file"
@@ -136,6 +137,10 @@ elif [ "$COMMAND" = "fsck" ] ; then
 elif [ "$COMMAND" = "balancer" ] ; then
   CLASS=org.apache.hadoop.hdfs.server.balancer.Balancer
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_BALANCER_OPTS"
+elif [ "$COMMAND" = "hadaps" ] ; then
+  CLASS=org.apache.hadoop.hadaps.Hadaps
+  CLASSPATH=${CLASSPATH}:${TOOL_PATH}
+  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_HADAPS_OPTS"
 elif [ "$COMMAND" = "jmxget" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.JMXGet
 elif [ "$COMMAND" = "oiv" ] ; then

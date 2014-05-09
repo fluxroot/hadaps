@@ -104,6 +104,24 @@
       <directory>../hadoop-sls/target/hadoop-sls-${project.version}/sls</directory>
       <outputDirectory>/share/hadoop/${hadoop.component}/sls</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>../hadoop-hadaps/src/main/conf</directory>
+      <outputDirectory>/etc/hadoop</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>../hadoop-hadaps/target</directory>
+      <outputDirectory>/share/hadoop/${hadoop.component}/sources</outputDirectory>
+      <includes>
+        <include>*-sources.jar</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>../hadoop-hadaps-test/target</directory>
+      <outputDirectory>/share/hadoop/${hadoop.component}/sources</outputDirectory>
+      <includes>
+        <include>*-sources.jar</include>
+      </includes>
+    </fileSet>
   </fileSets>
   <dependencySets>
     <dependencySet>
